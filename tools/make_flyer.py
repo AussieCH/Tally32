@@ -5,7 +5,9 @@ make_flyer.py - Flyer Tally32 Basic (A4, zwei Seiten) -> docs/Tally32_Basic_Flye
 Vorderseite: Was es ist, Bildschirmfotos, Funktionen. Rückseite: Stückliste (BOM),
 Einrichtung in vier Schritten, Voraussetzungen, Lizenz und Kontakt.
 Erzeugen mit ~/.pdf-venv/bin/python tools/make_flyer.py, Bildschirmfotos aus docs/screens.
+Englische Fassung: --lang en -> docs/Tally32_Basic_Flyer_EN.pdf, Bildschirmfotos aus docs/screens/en.
 """
+import argparse
 import datetime as dt
 import os
 
@@ -18,8 +20,15 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Image, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-OUT = os.path.join(ROOT, "docs", "Tally32_Basic_Flyer.pdf")
-SCREENS = os.path.join(ROOT, "docs", "screens")
+OUT = {"de": os.path.join(ROOT, "docs", "Tally32_Basic_Flyer.pdf"),
+       "en": os.path.join(ROOT, "docs", "Tally32_Basic_Flyer_EN.pdf")}
+SCREENS = {"de": os.path.join(ROOT, "docs", "screens"), "en": os.path.join(ROOT, "docs", "screens", "en")}
+LANG = "de"
+
+
+def L(de, en):
+    """Text in der gewählten Sprache."""
+    return en if LANG == "en" else de
 DATE = dt.date.today().strftime("%m/%Y")
 
 pdfmetrics.registerFont(TTFont("Montserrat", os.path.join(ROOT, "tools/fonts/Montserrat-Medium.ttf")))
@@ -61,7 +70,7 @@ def table(rows, widths, head=True, bold_first=True):
 
 
 def shot(name, w_mm):
-    p = os.path.join(SCREENS, name)
+    p = os.path.join(SCREENS[LANG], name)
     return Image(p, width=w_mm * mm, height=w_mm * mm * 600 / 1024)
 
 
@@ -94,17 +103,23 @@ def on_page(c, doc):
     c.setFont("Montserrat", 26)
     c.drawString(16 * mm, A4[1] - 17 * mm, "Tally32 Basic")
     c.setFont("Montserrat", 11.5)
-    c.drawString(16 * mm, A4[1] - 25 * mm, "Die Statusanzeige für den Arbeitsplatz. Im Gespräch, besetzt bis, frei ab.")
+    c.drawString(16 * mm, A4[1] - 25 * mm, L("Die Statusanzeige für den Arbeitsplatz. Im Gespräch, besetzt bis, frei ab.",
+                                                    "The status display for your desk. On a call, busy until, free from."))
     c.setFont("Montserrat", 9)
-    c.drawRightString(A4[0] - 16 * mm, A4[1] - 15 * mm, "Nicht kommerzielle Lizenz  ·  Stand " + DATE)
+    c.drawRightString(A4[0] - 16 * mm, A4[1] - 15 * mm, L("Nicht kommerzielle Lizenz  ·  Stand ", "Noncommercial licence  ·  ") + DATE)
     c.setFillColor(GREY)
     c.setFont("Helvetica", 7.5)
     c.drawString(16 * mm, 9 * mm, "Timme Security  ·  hello@timme-security.ch  ·  github.com/AussieCH/Tally32")
-    c.drawRightString(A4[0] - 16 * mm, 9 * mm, "Seite %d von 2" % doc.page)
+    c.drawRightString(A4[0] - 16 * mm, 9 * mm, L("Seite %d von 2", "Page %d of 2") % doc.page)
     c.restoreState()
 
 
-def build():
+def build(lang="de"):
+    global LANG
+    LANG = lang
+    if lang == "en":
+        build_en()
+        return
     s = []
     # ------------------------------------------------------------ Seite 1
     s.append(P("Ein kleines Display neben dem Bildschirm zeigt Kolleginnen, Kollegen und Besuchenden auf einen Blick, "
@@ -197,11 +212,116 @@ def build():
     s.append(P("Timme Security, Oliver Timme, hello@timme-security.ch. Quellcode, Anleitung und Spec Sheet für die IT: "
                "github.com/AussieCH/Tally32", SMALL))
 
-    doc = SimpleDocTemplate(OUT, pagesize=A4, leftMargin=16 * mm, rightMargin=16 * mm, topMargin=42 * mm,
+    finish(s)
+
+
+def finish(s):
+    out = OUT[LANG]
+    doc = SimpleDocTemplate(out, pagesize=A4, leftMargin=16 * mm, rightMargin=16 * mm, topMargin=42 * mm,
                             bottomMargin=16 * mm, title="Tally32 Basic Flyer", author="Oliver Timme")
     doc.build(s, onFirstPage=on_page, onLaterPages=on_page)
-    print("PDF:", OUT)
+    print("PDF:", out)
+
+
+def build_en():
+    """Englische Fassung, Aufbau wie build()."""
+    s = []
+    # ------------------------------------------------------------ Page 1
+    s.append(P("A small display next to your monitor shows colleagues and visitors at a glance whether you are on a call, "
+               "in a meeting or free, and <b>when you will be free again</b>. "
+               "The data comes from your own computer over USB: microphone, Outlook calendar and Teams status. "
+               "No server, no company network, no cloud beyond the Microsoft 365 you already have."))
+    s.append(Spacer(1, 2 * mm))
+    s.append(shots([("status-on-air-termin.png", "ON AIR in a meeting, with free from"),
+                    ("status-besetzt.png", "BUSY, with free from"),
+                    ("status-frei.png", "FREE until, then free from")], 58))
+    s.append(Spacer(1, 1 * mm))
+    s.append(shots([("status-abwesend.png", "AWAY according to the calendar"),
+                    ("status-nicht-am-platz.png", "Laptop undocked, next appointment"),
+                    ("status-ausser-haus.png", "Day is over, back tomorrow at 07:00")], 58))
+
+    left = [P("Display", H2)] + bullets([
+        "<b>Seven states</b>: ON A CALL (ON AIR), BUSY, AWAY, FREE, NOT AT DESK, OUT OF OFFICE, NO SIGNAL.",
+        "<b>Free from and free until</b> from the Outlook calendar. Gaps of up to 5 minutes count as busy.",
+        "<b>The microphone detects calls</b>: Teams, 3CX, Webex, Zoom or any other app that uses it. "
+        "Plus the Teams status (in a call, presenting, do not disturb, away).",
+        "<b>Every state with text and symbol</b>, not just colour. Status colours also differ in "
+        "brightness, so they stay clear for colour blind people.",
+        "<b>Bilingual</b>: German or English, switchable in the menu (Sprache / Language).",
+        "<b>Your name in the header</b>, colours, brightness and rotation adjustable.",
+        "<b>Screen saver</b> when the computer is locked and after work. A tap wakes it.",
+    ])
+    right = [P("Book a meeting on the display", H2)] + bullets([
+        "Visitors book a meeting on the display themselves: email, title, 15, 30 or 60 minutes, a free slot "
+        "this week or next. The meeting goes into your calendar and the invitation is sent by email.",
+        "Time window, lunch break and weekdays adjustable, at most 4 bookings per hour.",
+    ]) + [P("Without the laptop", H2)] + bullets([
+        "When undocked, the display keeps working from the buffered appointments: BUSY with "
+        "\u201cback approx.\u201d, otherwise NOT AT DESK with the next appointment. A real time clock keeps "
+        "the time through power cuts.",
+    ]) + [P("Setup and use", H2)] + bullets([
+        "Own setup Wi-Fi with a web interface for your phone, can be turned off.",
+        "Menu right on the display (PIN protected), demo mode for presentations.",
+        "Agent for Windows 11 and macOS with autostart, Microsoft 365 sign-in by code.",
+    ])
+    s.append(two_cols(left, right))
+    s.append(PageBreak())
+
+    # ------------------------------------------------------------ Page 2
+    s.append(P("Bill of materials (BOM)", H2))
+    s.append(P("Everything you need for one desk. Stand and mounting will follow separately (3D print, in progress)."))
+    s.append(table([
+        ["No.", "Part", "Details", "Qty", "Approx. price"],
+        ["1", "Display GUITION JC1060P470C", "7 inch IPS 1024 x 600, touch, ESP32-P4 with Wi-Fi (ESP32-C6), MIPI-DSI, "
+         "real time clock, 16 MB flash. Black case, two USB-C ports (use the upper one)", "1", "approx. CHF 50"],
+        ["2", "USB-C cable", "USB 2.0 data cable (not a charge-only cable), length to suit the desk, 1 to 2 m. "
+         "Connect to the docking station or a power supply, not directly to the laptop", "1", "approx. CHF 5"],
+        ["3", "Coin cell CR1220", "Backup for the real time clock, so the time survives power cuts "
+         "(e.g. when undocking from an HP Dock G5)", "1", "approx. CHF 2"],
+        ["4", "USB power supply 5 V, 2 A (optional)", "Only if the docking station has no free USB port "
+         "or the display should stay on without the laptop", "0 to 1", "approx. CHF 10"],
+        ["5", "Tally32 firmware", "This repository, folder firmware, flashed over USB-C without pressing a button", "", "CHF 0"],
+        ["6", "Tally32 agent", "Python script for Windows 11 and macOS, folder agent, with autostart installer", "", "CHF 0"],
+    ], [9, 42, 84, 13, 30]))
+    s.append(P("Approximate prices as of 10/2026 (AliExpress or retailers). GUITION also makes the display in 4.3 inch "
+               "(approx. CHF 40) and 10 inch (approx. CHF 60), firmware for these is in preparation. Total per desk "
+               "around <b>CHF 60</b> without stand.", SMALL))
+
+    s.append(P("Requirements", H2))
+    s.append(table([
+        ["Area", "What you need"],
+        ["Computer", "Windows 11 or macOS 14.2 or later, a free USB port on the dock or computer, Python 3.12 "
+         "(installs without admin rights)"],
+        ["Microsoft 365", "Account with an Exchange mailbox. Permissions: Calendars.ReadBasic, Presence.Read, for "
+         "booking Calendars.ReadWrite. Depending on the tenant, a one-time admin consent"],
+        ["Network", "None. The display only connects over USB. The setup Wi-Fi is a separate network without "
+         "internet and can be turned off"],
+        ["Security", "No Microsoft token on the display, token on the computer encrypted (DPAPI or "
+         "Keychain). The display only shows up as a COM port, never as a keyboard or storage"],
+    ], [34, 144]))
+
+    s.append(P("Setup in four steps", H2))
+    s.append(table([
+        ["Step", "What to do", "Time"],
+        ["1", "Flash the firmware: <font face=Courier>cd firmware && pio run -t upload</font>, display on the upper USB-C port", "5 min"],
+        ["2", "Install the agent: <font face=Courier>install_windows.ps1</font> or <font face=Courier>install_mac.sh</font>, "
+         "sets up the Python environment and autostart", "5 min"],
+        ["3", "Sign in to Microsoft 365: <font face=Courier>tally_agent.py login</font>, enter the code on the PC. "
+         "For booking, first set <font face=Courier>\"booking\": true</font> in config.json", "2 min"],
+        ["4", "On your phone, join the Wi-Fi <b>Tally32-XXXX</b> (password tally32setup), open http://192.168.4.1, "
+         "admin / tally32, change the password, set name and colours", "5 min"],
+    ], [16, 142, 20]))
+
+    s.append(P("Licence and contact", H2))
+    s.append(P("Tally32 Basic is licensed under the PolyForm Noncommercial License 1.0.0. It is free for private use, "
+               "non-profit organisations, education, research and public bodies. Any commercial use, for example "
+               "in a company, needs a commercial licence."))
+    s.append(P("Timme Security, Oliver Timme, hello@timme-security.ch. Source code, guide and spec sheet for IT: "
+               "github.com/AussieCH/Tally32", SMALL))
+    finish(s)
 
 
 if __name__ == "__main__":
-    build()
+    ap = argparse.ArgumentParser(description="Tally32 Basic Flyer")
+    ap.add_argument("--lang", choices=("de", "en"), default="de")
+    build(ap.parse_args().lang)

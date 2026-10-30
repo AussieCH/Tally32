@@ -9,6 +9,9 @@ und aus dem Outlook Kalender, ob man besetzt ist und **ab wann man wieder frei i
 **Ausführliche Anleitung mit Bildern: [docs/Anleitung.md](docs/Anleitung.md)**
 (englisch: [docs/Manual.md](docs/Manual.md))
 
+Flyer: [Deutsch](docs/Tally32_Basic_Flyer.pdf), [English](docs/Tally32_Basic_Flyer_EN.pdf).
+Spec Sheet für die IT: [Deutsch](docs/Tally32_Agent_SpecSheet_ICT.pdf), [English](docs/Tally32_Agent_SpecSheet_IT_EN.pdf).
+
 | Zustand | Anzeige | Auslöser |
 |---|---|---|
 | ON AIR / IM GESPRÄCH | "ON AIR" pulsierend über der Zeit, darunter der normale Zustand mit seinen Zeiten (z. B. BESETZT "frei ab", FREI "frei bis"), links "im Gespräch" mit Quelle (Teams, 3CX …) | Mikrofon belegt oder Teams `InACall` / `Presenting` |
@@ -342,6 +345,9 @@ are busy and **when you will be free again**.
 
 **Detailed manual with pictures: [docs/Manual.md](docs/Manual.md)** (German:
 [docs/Anleitung.md](docs/Anleitung.md))
+
+Flyer: [English](docs/Tally32_Basic_Flyer_EN.pdf), [German](docs/Tally32_Basic_Flyer.pdf).
+Spec sheet for IT: [English](docs/Tally32_Agent_SpecSheet_IT_EN.pdf), [German](docs/Tally32_Agent_SpecSheet_ICT.pdf).
 
 | State | Display | Trigger |
 |---|---|---|
