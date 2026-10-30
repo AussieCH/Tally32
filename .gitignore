@@ -1,0 +1,22 @@
+.pio/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+._*
+.vscode/
+vendor/
+
+# Interne Dokumente, nur lokal (Olivers Wunsch 30.10.2026)
+docs/Tally32_Pitch_GL.pdf
+docs/Vorschlag Weisung BYOD.docx
+docs/Weisung_BYOD.docx
+docs/Weisung_BYOD.pdf
+tools/make_pitch.py
+tools/make_weisung.py
+# Lokale Skizzen
+docs/*.cdr
+Thumbs.db
+
+# Projektnotizen fuer Claude, nur lokal
+CLAUDE.md

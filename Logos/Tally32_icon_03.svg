@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 100 100">
+ <title>Tally32 – Icon 03, kompakt</title>
+ <rect x="5" y="15" width="90" height="82" rx="17" fill="#432078"/>
+ <rect x="22" y="3" width="12" height="28" rx="6" fill="#432078" stroke="#fff" stroke-width="3"/>
+ <rect x="66" y="3" width="12" height="28" rx="6" fill="#432078" stroke="#fff" stroke-width="3"/>
+ <rect x="15" y="38" width="31" height="22" rx="6" fill="#fff"/>
+ <rect x="54" y="38" width="31" height="22" rx="6" fill="#fff"/>
+ <rect x="15" y="67" width="31" height="21" rx="6" fill="#fff"/>
+ <circle cx="69.5" cy="77.5" r="14" fill="#B69AF4"/>
+</svg>

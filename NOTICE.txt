@@ -1,0 +1,56 @@
+Tally32 (Basic)
+Copyright (C) 2026 Oliver Timme, Timme Security, Schweiz
+
+Required Notice: Copyright (C) 2026 Oliver Timme, Timme Security, Schweiz (hello@timme-security.ch)
+
+Lizenz: PolyForm Noncommercial License 1.0.0, siehe LICENSE.md und
+https://polyformproject.org/licenses/noncommercial/1.0.0
+
+Erlaubt ist die Nutzung fuer nicht kommerzielle Zwecke: private Nutzung und
+Nutzung durch gemeinnuetzige Organisationen, Bildungs- und Forschungseinrichtungen
+und oeffentliche Stellen, jeweils auch mit Aenderungen und Weitergabe zu diesen
+Zwecken. Jede kommerzielle Nutzung, auch der Einsatz in einem Unternehmen, der
+Einbau in ein Produkt oder der Betrieb als Dienst, braucht eine kommerzielle
+Lizenz. Kontakt: Oliver Timme, hello@timme-security.ch
+
+Die Software wird OHNE JEDE GEWAEHRLEISTUNG bereitgestellt.
+
+Beitraege von Dritten werden nur mit Abtretung der Rechte (CLA) angenommen,
+damit kommerzielle Lizenzen moeglich bleiben.
+
+Bestandteile Dritter (siehe unten) behalten ihre eigenen Lizenzen, die
+PolyForm-Lizenz gilt fuer sie nicht.
+
+------------------------------------------------------------------------------
+Bestandteile Dritter und ihre Lizenzen
+
+Firmware
+  Ampelmaennchen-Symbol  CC BY-SA 2.0 DE, nach "Ampelmännchen Geh.png" von Ludki
+                         (de.wikipedia, Wikimedia Commons), geaendert: Kreis entfernt,
+                         verkleinert. Logos/Ampelmaennchen_Geh.png, firmware/src/walker_icon.h
+                         (tools/make_walker.py). Diese Dateien stehen unter CC BY-SA 2.0 DE,
+                         https://creativecommons.org/licenses/by-sa/2.0/de/
+  LovyanGFX              FreeBSD-Lizenz (2-Clause BSD), Copyright (c) 2020 lovyan03
+                         https://github.com/lovyan03/LovyanGFX
+  Arduino-Core ESP32     LGPL-2.1, Espressif Systems (pioarduino-Fork)
+  ESP-IDF                Apache-2.0, Espressif Systems
+  Montserrat (Schrift)   SIL Open Font License 1.1, Julieta Ulanovsky und andere.
+                         Die VLW-Dateien in firmware/src/fonts_vlw.h sind daraus
+                         umgewandelt ("based on Montserrat"), Lizenztext in
+                         tools/fonts/Montserrat-LICENSE/OFL.txt
+  GSL3680-Firmware        MIT (github.com/chipguyhere/JC8012P4A1C_display), Daten
+                         des Touch-Controllers fuer das 10"-Display aus dem
+                         Herstellerdemo, firmware/src/gsl3680_fw_data.h. Der
+                         GPL-Algorithmus des Herstellers ist nicht enthalten.
+
+Agent (Python)
+  msal, msal-extensions  MIT, Microsoft
+  pyserial               BSD-3-Clause
+  requests               Apache-2.0
+  cryptography           Apache-2.0 oder BSD-3-Clause
+  certifi                MPL-2.0
+  urllib3, idna, pyjwt,  MIT bzw. BSD (siehe jeweilige Pakete)
+  cffi, pycparser, charset-normalizer
+
+Werkzeuge
+  reportlab, Pillow, pypdf, python-docx   BSD bzw. MIT (nur zum Erzeugen der Dokumente)

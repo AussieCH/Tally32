@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 100 100">
+ <title>Tally32 – Icon 01, Kalender</title>
+ <path fill="#432078" d="M18 14H82A15 15 0 0 1 97 29V82A15 15 0 0 1 82 97H18A15 15 0 0 1 3 82V29A15 15 0 0 1 18 14Z"/>
+ <rect x="20" y="2" width="12" height="29" rx="6" fill="#432078" stroke="#fff" stroke-width="3"/>
+ <rect x="68" y="2" width="12" height="29" rx="6" fill="#432078" stroke="#fff" stroke-width="3"/>
+ <rect x="13" y="36" width="34" height="24" rx="7" fill="#fff"/>
+ <rect x="53" y="36" width="34" height="24" rx="7" fill="#fff"/>
+ <rect x="13" y="66" width="34" height="24" rx="7" fill="#fff"/>
+ <circle cx="70" cy="78" r="15.2" fill="#B69AF4"/>
+</svg>

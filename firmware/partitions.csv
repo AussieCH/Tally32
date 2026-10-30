@@ -1,0 +1,6 @@
+# Tally32 standalone (4 MB Flash): eine App, startet direkt nach dem Einschalten.
+# otadata bleibt an 0xe000, weil PlatformIO dort immer boot_app0.bin schreibt.
+# Name,   Type, SubType, Offset,   Size
+nvs,      data, nvs,     0x9000,   0x5000
+otadata,  data, ota,     0xe000,   0x2000
+factory,  app,  factory, 0x10000,  0x3F0000
