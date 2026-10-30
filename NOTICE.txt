@@ -21,8 +21,28 @@ damit kommerzielle Lizenzen moeglich bleiben.
 Bestandteile Dritter (siehe unten) behalten ihre eigenen Lizenzen, die
 PolyForm-Lizenz gilt fuer sie nicht.
 
+English:
+
+Licence: PolyForm Noncommercial License 1.0.0, see LICENSE.md and
+https://polyformproject.org/licenses/noncommercial/1.0.0
+
+Use for noncommercial purposes is permitted: private use and use by
+charitable organisations, educational and research institutions and public
+bodies, in each case also with modifications and distribution for these
+purposes. Any commercial use, including use within a company, integration
+into a product or operation as a service, requires a commercial licence.
+Contact: Oliver Timme, hello@timme-security.ch
+
+The software is provided WITHOUT ANY WARRANTY.
+
+Contributions from third parties are only accepted with an assignment of
+rights (CLA), so that commercial licences remain possible.
+
+Third-party components (see below) keep their own licences, the PolyForm
+licence does not apply to them.
+
 ------------------------------------------------------------------------------
-Bestandteile Dritter und ihre Lizenzen
+Bestandteile Dritter und ihre Lizenzen / Third-party components and their licences
 
 Firmware
   Ampelmaennchen-Symbol  CC BY-SA 2.0 DE, nach "Ampelmännchen Geh.png" von Ludki

@@ -17,7 +17,7 @@ void bootScreen() {
   lcd.setFont(smooth(26));
   lcd.setTextColor(c565(mixRGB(PURPLE, WHITE, 25)), c565(WHITE));
   lcd.setTextDatum(middle_center);
-  lcd.drawString("Statusanzeige f\xC3\xBCr den Arbeitsplatz", SCR_W / 2, ly(330));
+  lcd.drawString(TR("Statusanzeige f\xC3\xBCr den Arbeitsplatz", "Workplace status display"), SCR_W / 2, ly(330));
   lcd.setFont(smooth(20));
   lcd.setTextColor(c565(mixRGB(PURPLE, WHITE, 45)), c565(WHITE));
   lcd.drawString("Version " TALLY32_VERSION " " TALLY32_EDITION, SCR_W / 2, ly(446));

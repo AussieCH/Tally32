@@ -119,17 +119,17 @@ static void cacheSave() {
 
 const char* resetReasonText() {
   switch (esp_reset_reason()) {
-    case ESP_RST_POWERON:  return "Strom ein";
-    case ESP_RST_BROWNOUT: return "Spannungseinbruch";
-    case ESP_RST_SW:       return "Neustart (Software)";
-    case ESP_RST_PANIC:    return "Absturz";
+    case ESP_RST_POWERON:  return TR("Strom ein", "Power on");
+    case ESP_RST_BROWNOUT: return TR("Spannungseinbruch", "Brownout");
+    case ESP_RST_SW:       return TR("Neustart (Software)", "Restart (software)");
+    case ESP_RST_PANIC:    return TR("Absturz", "Crash");
     case ESP_RST_INT_WDT:
     case ESP_RST_TASK_WDT:
     case ESP_RST_WDT:      return "Watchdog";
     case ESP_RST_EXT:      return "Reset-Pin";
     case ESP_RST_USB:      return "USB";
     case ESP_RST_JTAG:     return "JTAG";
-    default:               return "unbekannt";
+    default:               return TR("unbekannt", "unknown");
   }
 }
 
@@ -448,26 +448,35 @@ static void drawLogin() {
   const int cy = BAN_H + (SCR_H - BAN_H) / 2;
   switch (login365.st) {
     case L_REQUESTED:
-      sTxt("Warte auf den Agenten ...", TEXT_CX, cy, 26, dim, bg, middle_center);
+      sTxt(TR("Warte auf den Agenten ...", "Waiting for the agent ..."), TEXT_CX, cy, 26, dim, bg, middle_center);
       break;
     case L_CODE: {
       const char* u = login365.url;
       if (!strncmp(u, "https://", 8)) u += 8;
-      sTxt("Am PC oder Handy \xC3\xB6" "ffnen:", TEXT_CX, cy - uy(120), 26, dim, bg);
+      sTxt(TR("Am PC oder Handy \xC3\xB6" "ffnen:", "Open on a PC or phone:"), TEXT_CX, cy - uy(120), 26, dim, bg);
       sTxt(u, TEXT_CX, cy - uy(80), 26, fg, bg);
-      sTxt("und diesen Code eingeben:", TEXT_CX, cy - uy(10), 26, dim, bg);
+      sTxt(TR("und diesen Code eingeben:", "and enter this code:"), TEXT_CX, cy - uy(10), 26, dim, bg);
       sTxt(login365.code, TEXT_CX, cy + uy(30), 48, fg, bg);
       break;
     }
     case L_OK:
-      sTxt("Angemeldet als", TEXT_CX, cy - uy(30), 26, dim, bg);
+      sTxt(TR("Angemeldet als", "Signed in as"), TEXT_CX, cy - uy(30), 26, dim, bg);
       sTxt(login365.msg, TEXT_CX, cy + uy(10), 26, fg, bg);
       break;
     default:
-      sTxt("FEHLER", TEXT_CX, cy - uy(40), 48, fg, bg);
+      sTxt(TR("FEHLER", "ERROR"), TEXT_CX, cy - uy(40), 48, fg, bg);
       sTxt(login365.msg, TEXT_CX, cy + uy(30), 20, fg, bg);
       break;
   }
+}
+
+// Wochentage als interne Merker in cur.nextAt (deutsch, werden verglichen), Anzeige ueber dayWord()
+static const char* WD_SHORT[7] = { "Mo", "Di", "Mi", "Do", "Fr", "Sa", "So" };
+static const char* WD_SHORT_EN[7] = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+static const char* dayWord(const char* marker) {
+  if (!strcmp(marker, "morgen")) return TR("morgen", "tomorrow");
+  for (int i = 0; i < 7; i++) if (!strcmp(marker, WD_SHORT[i])) return TR(WD_SHORT[i], WD_SHORT_EN[i]);
+  return marker;
 }
 
 // Statusanzeige: links Symbol und Zustand, rechts Beschriftung und Zeit, beides
@@ -479,7 +488,7 @@ static void drawFull() {
   drawStatusPane(statusBgRGB(cur.mode));
 
   Icon icon = IC_OFF;
-  const char *ttl = "KEIN SIGNAL", *sub = cur.src, *sub2 = "", *label = "", *hhmm = "", *note = "";
+  const char *ttl = TR("KEIN SIGNAL", "NO SIGNAL"), *sub = cur.src, *sub2 = "", *label = "", *hhmm = "", *note = "";
   char lbuf[32] = "", nbuf[40] = "", cbuf[48] = "";
   // Gespraech mit bekanntem Zustand darunter: diesen Zustand mit seinen Zeiten zeigen, ON AIR
   // pulsiert rechts darueber. So sieht ein Besucher, ob ein Termin laeuft und wann wieder frei.
@@ -488,50 +497,51 @@ static void drawFull() {
   if (air && (cur.base == M_FREE || cur.base == M_BUSY || cur.base == M_AWAY)) sm = cur.base;
   switch (sm) {
     case M_CALL:
-      icon = IC_MIC; ttl = "IM GESPR\xC3\x84" "CH";     // ON AIR pulsiert rechts ueber der Zeit
-      if (cur.freeAt[0]) { label = "Termin bis"; hhmm = cur.freeAt; }
+      icon = IC_MIC; ttl = TR("IM GESPR\xC3\x84" "CH", "ON A CALL");     // ON AIR pulsiert rechts ueber der Zeit
+      if (cur.freeAt[0]) { label = TR("Termin bis", "meeting until"); hhmm = cur.freeAt; }
       break;
     case M_BUSY:
-      icon = IC_CAL; ttl = "BESETZT";
-      if (cur.freeAt[0]) { label = cur.offline ? "zur\xC3\xBC" "ck ca." : "frei ab"; hhmm = cur.freeAt; }
+      icon = IC_CAL; ttl = TR("BESETZT", "BUSY");
+      if (cur.freeAt[0]) { label = cur.offline ? TR("zur\xC3\xBC" "ck ca.", "back approx.") : TR("frei ab", "free from"); hhmm = cur.freeAt; }
       break;
     case M_AWAY:
-      icon = IC_AWAY; ttl = "ABWESEND";
-      if (cur.freeAt[0]) { label = "zur\xC3\xBC" "ck ab"; hhmm = cur.freeAt; }
+      icon = IC_AWAY; ttl = TR("ABWESEND", "AWAY");
+      if (cur.freeAt[0]) { label = TR("zur\xC3\xBC" "ck ab", "back at"); hhmm = cur.freeAt; }
       break;
     case M_OUT:
-      icon = IC_WALK; ttl = "NICHT AM PLATZ";
-      if (cur.nextAt[0]) { label = "n\xC3\xA4" "chster Termin"; hhmm = cur.nextAt; }
-      else note = "heute keine Termine mehr";
+      icon = IC_WALK; ttl = TR("NICHT AM PLATZ", "NOT AT DESK");
+      if (cur.nextAt[0]) { label = TR("n\xC3\xA4" "chster Termin", "next appointment"); hhmm = cur.nextAt; }
+      else note = TR("heute keine Termine mehr", "no more appointments today");
       break;
     case M_CLOSED:
-      icon = IC_AWAY; ttl = "AUSSER HAUS";
+      icon = IC_AWAY; ttl = TR("AUSSER HAUS", "OUT OF OFFICE");
       if (cur.freeAt[0]) {
-        if (!strcmp(cur.nextAt, "heute")) strcpy(lbuf, "zur\xC3\xBC" "ck ab");
-        else snprintf(lbuf, sizeof(lbuf), "zur\xC3\xBC" "ck %s ab", cur.nextAt);
+        // nextAt ist ein interner Merker ("heute", "morgen", "Mo".."So"), erst hier uebersetzt
+        if (!strcmp(cur.nextAt, "heute")) strcpy(lbuf, TR("zur\xC3\xBC" "ck ab", "back at"));
+        else snprintf(lbuf, sizeof(lbuf), TR("zur\xC3\xBC" "ck %s ab", "back %s at"), dayWord(cur.nextAt));
         label = lbuf; hhmm = cur.freeAt;
       }
       break;
     case M_FREE:
-      icon = IC_CHECK; ttl = "FREI";
+      icon = IC_CHECK; ttl = TR("FREI", "FREE");
       if (cur.nextAt[0]) {
-        label = "frei bis"; hhmm = cur.nextAt;
-        if (cur.freeAt[0]) { snprintf(nbuf, sizeof(nbuf), "danach wieder frei ab %s", cur.freeAt); note = nbuf; }
-      } else note = "heute keine Termine mehr";
+        label = TR("frei bis", "free until"); hhmm = cur.nextAt;
+        if (cur.freeAt[0]) { snprintf(nbuf, sizeof(nbuf), TR("danach wieder frei ab %s", "free again from %s"), cur.freeAt); note = nbuf; }
+      } else note = TR("heute keine Termine mehr", "no more appointments today");
       break;
     default:
-      sub = "Agent auf dem"; sub2 = "Computer starten";
+      sub = TR("Agent auf dem", "Start the agent"); sub2 = TR("Computer starten", "on the computer");
       break;
   }
   if (air && sm != M_CALL) {                     // links unter dem Zustand: im Gespraech, Quelle
-    snprintf(cbuf, sizeof(cbuf), "im Gespr\xC3\xA4" "ch%s%s", cur.src[0] ? ", " : "", cur.src);
+    snprintf(cbuf, sizeof(cbuf), TR("im Gespr\xC3\xA4" "ch%s%s", "on a call%s%s"), cur.src[0] ? ", " : "", cur.src);
     sub = cbuf; sub2 = "";
   }
   drawLeft(icon, ttl, sub, sub2);
 
   // Rechts: bei ON AIR pulsierend der Zustand, darunter Beschriftung und Uhrzeit, mittig
   drawTimeCentered(label, hhmm, note, BAN_H, SCR_H, cur.mode == M_CALL ? "ON AIR" : "");
-  if (bookingShown()) drawButton("Termin buchen");   // ohne Notebook keine Buchung moeglich
+  if (bookingShown()) drawButton(TR("Termin buchen", "Book a meeting"));   // ohne Notebook keine Buchung moeglich
   shown = cur;
 }
 
@@ -778,9 +788,9 @@ static void touchLoop() {
     apApply();
     Theme t = themeFrom(0x2A3240);
     lcd.fillScreen(t.bg);
-    sTxt("Einrichtungs-WLAN eingeschaltet", SCR_W / 2, ly(180), 34, t.fg, t.bg);
+    sTxt(TR("Einrichtungs-WLAN eingeschaltet", "Setup Wi-Fi switched on"), SCR_W / 2, ly(180), 34, t.fg, t.bg);
     char b[48];
-    snprintf(b, sizeof(b), "WLAN %s, http://192.168.4.1", webSsid());
+    snprintf(b, sizeof(b), TR("WLAN %s, http://192.168.4.1", "Wi-Fi %s, http://192.168.4.1"), webSsid());
     sTxt(b, SCR_W / 2, ly(250), 26, t.dim, t.bg);
     delay(3000);
     uiVersion++;                                 // Anzeige neu zeichnen
@@ -791,8 +801,8 @@ static void touchLoop() {
   accessReset();
   Theme t = themeFrom(0x2A3240);
   lcd.fillScreen(t.bg);
-  sTxt("Zugang zur\xC3\xBC" "ckgesetzt", SCR_W / 2, ly(180), 34, t.fg, t.bg);
-  sTxt("Web: admin / tally32, WLAN-Passwort Standard, PIN 0000", SCR_W / 2, ly(250), 26, t.dim, t.bg);
+  sTxt(TR("Zugang zur\xC3\xBC" "ckgesetzt", "Access reset"), SCR_W / 2, ly(180), 34, t.fg, t.bg);
+  sTxt(TR("Web: admin / tally32, WLAN-Passwort Standard, PIN 0000", "Web: admin / tally32, Wi-Fi password default, PIN 0000"), SCR_W / 2, ly(250), 26, t.dim, t.bg);
   delay(4000);
   ESP.restart();
 }
@@ -822,7 +832,7 @@ static void offlineStatus() {
       snprintf(s.clock, sizeof(s.clock), "%02d:%02d", t.tm_hour, t.tm_min);
       s.offline = true;
       strcpy(s.stand, lastStand);
-      snprintf(s.src, sizeof(s.src), "Stand %s", lastStand);
+      snprintf(s.src, sizeof(s.src), TR("Stand %s", "as of %s"), lastStand);
       const CalBlock* curB = nullptr;
       for (int i = 0; i < d->n; i++) if (d->b[i].from <= m && m < d->b[i].to) curB = &d->b[i];
       if (curB) {
@@ -877,15 +887,15 @@ static void demoLoop() {
   strcpy(s.clock, cur.clock);
   switch (step) {
     case 0: demoTime(45, s.nextAt); demoTime(75, s.freeAt); break;              // frei bis, danach frei ab
-    case 1: s.mode = M_BUSY; demoTime(30, s.freeAt); strcpy(s.src, "Termin im Kalender"); break;
+    case 1: s.mode = M_BUSY; demoTime(30, s.freeAt); strcpy(s.src, TR("Termin im Kalender", "Calendar appointment")); break;
     case 2: s.mode = M_CALL; s.base = M_BUSY; demoTime(30, s.freeAt); strcpy(s.src, "Teams"); break;   // im Termin
     case 3: s.mode = M_CALL; s.base = M_FREE; demoTime(45, s.nextAt); demoTime(75, s.freeAt);       // spontan
             strcpy(s.src, "3CX"); break;
-    case 4: s.mode = M_AWAY; strcpy(s.freeAt, "17:00"); strcpy(s.src, "laut Kalender"); break;
+    case 4: s.mode = M_AWAY; strcpy(s.freeAt, "17:00"); strcpy(s.src, TR("laut Kalender", "per calendar")); break;
     case 5: s.mode = M_OUT; s.offline = true; demoTime(60, s.nextAt);
-            demoTime(-20, s.stand); snprintf(s.src, sizeof(s.src), "Stand %s", s.stand); break;
+            demoTime(-20, s.stand); snprintf(s.src, sizeof(s.src), TR("Stand %s", "as of %s"), s.stand); break;
     case 6: cur = s; bookingDemoStart(); return;                                // Buchung vorfuehren
-    case 8: s.mode = M_CLOSED; strcpy(s.src, "Feierabend"); strcpy(s.freeAt, "07:00");
+    case 8: s.mode = M_CLOSED; strcpy(s.src, TR("Feierabend", "After hours")); strcpy(s.freeAt, "07:00");
             strcpy(s.nextAt, "morgen"); break;                                  // ausserhalb der Arbeitszeit
     default: break;                                                             // frei, keine Termine
   }
@@ -893,7 +903,6 @@ static void demoLoop() {
 }
 
 // ----------------------------------------------------------------- Feierabend
-static const char* WD_SHORT[7] = { "Mo", "Di", "Mi", "Do", "Fr", "Sa", "So" };
 
 static void applyAfterHours() {
   bool now_after = false;
@@ -911,7 +920,7 @@ static void applyAfterHours() {
   // Anrufe und Termine bleiben sichtbar, nur "frei" wird zu "ausser Haus"
   cur.mode = M_CLOSED;
   int wd = (t.tm_wday + 6) % 7, m = t.tm_hour * 60 + t.tm_min;
-  strcpy(cur.src, (bookDays & (1 << wd)) ? "Feierabend" : "Arbeitsfreier Tag");
+  strcpy(cur.src, (bookDays & (1 << wd)) ? TR("Feierabend", "After hours") : TR("Arbeitsfreier Tag", "Day off"));
   cur.freeAt[0] = cur.nextAt[0] = '\0';
   for (int d = 0; d < 8; d++) {                  // naechster Arbeitsbeginn
     int day = (wd + d) % 7;

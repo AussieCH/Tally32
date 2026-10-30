@@ -1,5 +1,7 @@
 # Tally32 Basic: Anleitung
 
+*English version: [Manual.md](Manual.md)*
+
 Tally32 zeigt am Arbeitsplatz, ob Sie gerade telefonieren, in einem Termin sind oder frei sind,
 und vor allem **ab wann Sie wieder frei sind**. Besucher sehen das auf einen Blick und können bei
 Bedarf direkt am Display einen Termin bei Ihnen buchen.
@@ -266,6 +268,7 @@ nach 60 Sekunden ohne Berührung schliesst es sich von selbst.
 |---|---|
 | Demomodus | alle Zustände der Reihe nach vorführen, siehe [Abschnitt 8](#8-ohne-notebook-bildschirmschoner-demomodus) |
 | Anzeige | Helligkeit, Display um 180 Grad drehen, Name in der Kopfzeile |
+| Sprache / Language | Deutsch oder English für Display, Webinterface und die Texte des Agenten |
 | Farben | Farbe des Balkens je Zustand |
 | Terminbuchung | Knopf ein oder aus, Zeitfenster, Wochentage, Mittagspause |
 | Microsoft 365 | angemeldetes Konto, neues Konto verbinden |
@@ -281,6 +284,15 @@ nach 60 Sekunden ohne Berührung schliesst es sich von selbst.
 - **Display um 180 Grad drehen**, zum Beispiel wenn das Kabel oben besser passt.
 - **Name in der Kopfzeile:** Ist er leer, steht dort das angemeldete Microsoft-Konto. Mit "Ändern"
   einen eigenen Namen eintippen, zum Beispiel "Jasmin Muster".
+
+### Sprache / Language
+
+Wählen Sie **Deutsch** oder **English**. Die Sprache gilt für das Display, das Webinterface und die
+Texte, die der Agent ans Display schickt (zum Beispiel die Quelle "laut Kalender"). Die Einstellung
+bleibt über einen Neustart erhalten. Die Kachel heisst in beiden Sprachen gleich, so finden Sie sie
+immer.
+
+<img src="screens/menue-sprache.png" width="480" alt="Sprache / Language">
 
 ### Farben
 
@@ -336,7 +348,8 @@ Ist das Einrichtungs-WLAN eingeschaltet, verbinden Sie ein Handy oder Tablet mit
 
 Dort finden Sie dieselben Einstellungen wie im Menü und zusätzlich: Passwort des WLAN und des
 Webinterface ändern, Microsoft-365-Anmeldung starten (Adresse und Code erscheinen im Webinterface und
-auf dem Display), Demomodus.
+auf dem Display), Demomodus. Das Webinterface hat zudem eine Sprachauswahl (Deutsch oder English), sie
+nutzt dieselbe Einstellung wie die Kachel "Sprache / Language".
 
 Wieder einschalten lässt sich ein abgeschaltetes Einrichtungs-WLAN nur am Gerät: im Menü oder
 **5 Sekunden auf das Display drücken**.

@@ -4,7 +4,10 @@ Statusanzeige für den Arbeitsplatz auf einem ESP32 Display (GUITION 7" oder 10,
 angeschlossen per USB. Zeigt wie ein Tally Light im Studio, ob man gerade telefoniert,
 und aus dem Outlook Kalender, ob man besetzt ist und **ab wann man wieder frei ist**.
 
+**English:** [see below](#english)
+
 **Ausführliche Anleitung mit Bildern: [docs/Anleitung.md](docs/Anleitung.md)**
+(englisch: [docs/Manual.md](docs/Manual.md))
 
 | Zustand | Anzeige | Auslöser |
 |---|---|---|
@@ -93,7 +96,7 @@ Das Display spannt ein eigenes WLAN auf (WPA2, ohne Internet):
 
 Funktionen: neue Office 365 Anmeldung auslösen (Code und Link erscheinen im
 Webinterface und auf dem Display, der Agent auf dem Computer erledigt den Rest),
-Farben pro Zustand, Name in der Kopfzeile (wessen Kalender das Display zeigt, leer =
+Sprache (Deutsch oder English), Farben pro Zustand, Name in der Kopfzeile (wessen Kalender das Display zeigt, leer =
 angemeldetes Konto, auch im Menü am Gerät unter Anzeige änderbar), Helligkeit und Drehung, WLAN-Passwort, Web-Passwort.
 Die Schriftfarbe wählt das Display je nach Helligkeit des Hintergrunds selbst.
 
@@ -109,6 +112,7 @@ nach 60 Sekunden ohne Berührung schliesst es sich.
 |---|---|
 | Demomodus | starten bzw. beenden, das Menü schliesst sich dabei |
 | Anzeige | Helligkeit, Display um 180° drehen, Name in der Kopfzeile |
+| Sprache / Language | Deutsch oder English für Display, Webinterface und die Texte des Agenten |
 | Farben | sechs Farben pro Zustand, jede mit Helligkeitswert in Prozent |
 | Terminbuchung | Knopf ein/aus, Zeitfenster, Wochentage, Mittagspause |
 | Microsoft 365 | angemeldetes Konto, neues Konto verbinden (über den Agent) |
@@ -327,3 +331,324 @@ und öffentliche Stellen, auch mit Änderungen und Weitergabe zu diesen Zwecken.
 einem Unternehmen noch der Einbau in ein Produkt oder der Betrieb als Dienst. Dafür gibt
 es eine kommerzielle Lizenz. Kontakt: Oliver Timme, hello@timme-security.ch.
 Bestandteile Dritter behalten ihre eigenen Lizenzen, sie stehen in [NOTICE.txt](NOTICE.txt).
+
+---
+
+## English
+
+Desk status display on an ESP32 display (GUITION 7" or 10.1"), connected over USB. Like a tally
+light in a studio it shows whether you are on a call, and from your Outlook calendar whether you
+are busy and **when you will be free again**.
+
+**Detailed manual with pictures: [docs/Manual.md](docs/Manual.md)** (German:
+[docs/Anleitung.md](docs/Anleitung.md))
+
+| State | Display | Trigger |
+|---|---|---|
+| ON AIR / ON A CALL | pulsing "ON AIR" above the time, below it the normal state with its times (e.g. BUSY "free from", FREE "free until"), on the left "on a call" with the source (Teams, 3CX …) | microphone in use or Teams `InACall` / `Presenting` |
+| BUSY | calendar symbol, "free from 14:30" | meeting with `showAs` busy, or Teams "Do not disturb" |
+| AWAY | suitcase, "back at 17:00" | meeting with `showAs` oof or workingElsewhere, or Teams Away / Be right back |
+| FREE | check mark, "free until 15:00" (next meeting), below it "free again from 16:00" | otherwise |
+| NOT AT DESK | walking traffic light man, "next appointment 13:00", "as of 09:29" | notebook gone, no meeting in the calendar right now |
+| OUT OF OFFICE | suitcase, "After hours" or "Day off", "back tomorrow at 07:00" | outside working hours (earliest start, latest end and weekdays from the booking settings), replaces FREE and NOT AT DESK. Screen saver after 2 minutes without a touch |
+| NO SIGNAL | crossed out circle | no data from the agent and no valid offline buffer |
+
+### What it looks like
+
+Screenshots from the device (10", demo mode, sample account jasmin.muster@mail.ch, created with
+`tools/screenshot.py --demo`, the sample account is set by the variable `TALLY32_SHOT_NAME`). The
+date 30.02.2026 in the header does not exist, it marks the pictures as demo pictures:
+
+| | |
+|---|---|
+| ![FREE](docs/screens/en/status-frei.png) | ![BUSY](docs/screens/en/status-besetzt.png) |
+| ![ON AIR in a meeting](docs/screens/en/status-on-air-termin.png) | ![ON AIR spontaneous](docs/screens/en/status-on-air-spontan.png) |
+| ![AWAY](docs/screens/en/status-abwesend.png) | ![NOT AT DESK](docs/screens/en/status-nicht-am-platz.png) |
+| ![OUT OF OFFICE](docs/screens/en/status-ausser-haus.png) | ![Booking start time](docs/screens/en/buchung-5-beginn.png) |
+
+All pictures are in [docs/screens/en](docs/screens/en) (German: [docs/screens](docs/screens)).
+
+### Without notebook (undocked)
+
+Every 30 seconds the agent sends the time and the meeting blocks of today and tomorrow to the
+display. If the notebook is unplugged (or asleep), the display keeps working with this data:
+during a meeting BUSY with "back approx." or AWAY with "back at", otherwise NOT AT DESK with the
+next appointment. It always shows "as of HH:MM", the time the data was last updated. Without the
+notebook the "Book a meeting" button is hidden. The data is valid for at most 16 hours. After a
+power cut the display shows NO SIGNAL until the notebook is connected again.
+
+Important: connect the display to the docking station or to its own USB power supply, not
+directly to the notebook, otherwise it turns off when you undock. Some docks (e.g. HP USB-C Dock
+G5) cut the power briefly when undocking and the display restarts. That is why it stores the
+meeting blocks in flash, and the real-time clock on the board keeps the time. This requires a
+**CR1220 coin cell** in the holder, otherwise the display shows NO SIGNAL after such a restart.
+Whether the clock is running is shown in the menu under Info ("Real-time clock").
+
+Layout: light grey header with logo, date, name and time. Below it on white: on the left the
+symbol and state (and the "Book a meeting" button), in the middle a thin line with a narrow bar in
+the status colour (free green, on a call red, busy orange, away dark blue, no signal grey), on the
+right the time. At the top right the symbol for the connection to the agent.
+
+Every state can be recognised by text and symbol, not only by colour. "free from" is the end of
+the continuous block of meetings. Gaps of up to 5 minutes count as continuously busy.
+
+One display per computer. The agent on the computer delivers everything over USB. No company
+network, no server.
+
+### Architecture
+
+```
+Microphone (CoreAudio / Windows Registry) ┐
+Microsoft Graph: calendar + presence      ┼→ agent/tally_agent.py → USB serial → firmware/ (GUITION 7" or 10")
+```
+
+- `firmware/` PlatformIO project for the GUITION JC1060P470C (ESP32-P4 with ESP32-C6 for Wi-Fi,
+  7" IPS 1024x600 with touch, environment `guition-p4`) and the GUITION JC8012P4A1C (10.1" IPS
+  1280x800, touch GSL3680, environment `guition-p4-10`), landscape. The only app on the ESP32-P4
+  (partition `factory`), starts right after power on.
+
+Where to buy the displays (AliExpress): [GUITION JC1060P470C, 7"](https://de.aliexpress.com/item/1005010023056143.html),
+[GUITION JC8012P4A1C, 10.1"](https://de.aliexpress.com/item/1005009147577522.html).
+
+On the computer or docking station the display is connected to the **upper** of the two USB-C
+sockets on the back (built-in USB interface of the ESP32-P4, Windows shows "USB Serial Device").
+Nothing shows up on the lower one.
+- `agent/` Python agent for macOS and Windows.
+
+### Web interface
+
+The display opens its own Wi-Fi network (WPA2, no internet):
+
+| | User | Password |
+|---|---|---|
+| Wi-Fi `Tally32-XXXX` | | `tally32setup` |
+| Web interface http://192.168.4.1 | `admin` | `tally32`, must be changed at the first sign-in |
+
+Functions: start a new Office 365 sign-in (code and link appear in the web interface and on the
+display, the agent on the computer does the rest), language (Deutsch or English), colours per
+state, name in the header (whose calendar the display shows, empty = signed-in account, can also
+be changed in the device menu under Display), brightness and rotation, Wi-Fi password, web
+password. The display picks the text colour by itself depending on the brightness of the
+background.
+
+#### Menu on the display
+
+Most settings are also available without Wi-Fi directly on the display, even when it is only
+connected to a USB power supply: **press and hold the Tally32 logo at the top left for 3
+seconds**, then enter the PIN (default `0000`, change it in the menu or in the web interface).
+After 5 wrong attempts the menu is locked for one minute. After 60 seconds without a touch it
+closes.
+
+| Tile | Content |
+|---|---|
+| Demo mode | start or stop, the menu closes |
+| Display | brightness, rotate display by 180°, name in the header |
+| Sprache / Language | Deutsch or English for the display, the web interface and the texts sent by the agent |
+| Colours | six colours per state, each with a brightness value in percent |
+| Meeting booking | button on/off, time window, weekdays, lunch break |
+| Microsoft 365 | signed-in account, connect new account (via the agent) |
+| Wi-Fi | setup Wi-Fi on/off, network name, password, address |
+| Info | version, display, connection, account, setup Wi-Fi with address, real-time clock, last restart |
+| Change PIN | enter the new PIN twice |
+
+#### Meeting booking on the display
+
+Can be turned on in the web interface or in the menu. The left area then shows the "Book a
+meeting" button. Visitors enter their email address and a title, choose 15, 30 or 60 minutes and a
+free slot in the current or next week. The agent creates the meeting in the calendar and sends the
+invitation. Configurable in the setup: earliest start, latest end, lunch break, weekdays. Times
+with `showAs` busy, tentative, oof and workingElsewhere count as taken. At most 4 bookings per
+hour. Requires the permission `Calendars.ReadWrite` (sign in once more after the update, depending
+on the tenant with admin approval).
+
+The booking dialog uses anti-aliased Montserrat fonts (SIL OFL) with real umlauts, generated with
+`tools/make_vlw.py`.
+
+#### Screen saver
+
+The agent reports whether the computer is locked (macOS via CoreGraphics, Windows via
+WTSSessionInfoEx). When the computer is locked, the normal screen stays at first. After 5 minutes
+of lock the screen saver starts: dark background, the logo moves slowly across the screen, at the
+bottom "Tap Me" jumps to a new position every 30 seconds. Tapping shows the normal screen (the tap
+does nothing else). After 2 minutes without a touch the screen saver comes back. Unlocking ends it
+immediately. No screen saver in demo mode, during a booking or sign-in and without the notebook.
+
+#### Demo mode
+
+Turn it on and off in the menu on the display or in the web interface under "Demo mode" (kept
+after a restart, over USB also `SET demo 1` / `SET demo 0`). The display then shows all states in
+turn (including OUT OF OFFICE), a new one every 6 seconds, and demonstrates a booking once per
+round. Visitors can also try the "Book a meeting" button themselves: the free slots are made up
+(with time window, lunch break and weekdays from the setup) and nothing is booked. "DEMO" is shown
+at the top right. Data from the computer is not shown during demo mode. Without the time from the
+agent a substitute clock runs from Monday 10:00.
+
+Password or PIN forgotten: press the display for 10 seconds. After that the default passwords and
+the PIN `0000` apply again.
+
+### Build and flash the firmware
+
+```bash
+cd firmware && pio run -e guition-p4 -t upload --upload-port /dev/cu.usbmodem31201
+```
+
+For the 10" display (GUITION JC8012P4A1C) use the environment `guition-p4-10`.
+
+On Windows the port is the "USB Serial Device" (e.g. `COM6`). Stop the agent first, it keeps the
+port open.
+
+For a clean start erase the whole flash first:
+
+```bash
+cd firmware && pio run -e guition-p4 -t erase --upload-port /dev/cu.usbmodem31201
+```
+
+### Agent
+
+```bash
+cd agent && uv venv .venv && uv pip install -p .venv/bin/python -r requirements.txt
+```
+
+```bash
+agent/.venv/bin/python agent/tally_agent.py login
+```
+
+```bash
+agent/.venv/bin/python agent/tally_agent.py
+```
+
+Further commands: `status` (print once, without a device), `demo` (play through all states),
+`logout`.
+
+Two displays on one computer: one agent per display, selected by the USB serial number
+(`"port": "sn:<number>"` in `config.json` or `agent/install_mac.sh display 2 sn:<number>`), see
+[Manual, section 9](docs/Manual.md#9-two-displays-on-one-computer).
+
+The agent texts on the display (for example the source of a state) follow the language set on the
+display.
+
+Configuration in `~/.config/tally32/config.json`, the token is stored next to it in
+`token_cache.json` (permissions 600). Without sign-in only microphone detection runs.
+
+#### Autostart on the Mac
+
+```bash
+agent/install_mac.sh
+```
+
+Creates the LaunchAgent `ch.aussie.tally32`: starts at login, is restarted after a crash, log in
+`~/Library/Logs/tally32.log`. Remove it with `agent/install_mac.sh uninstall`. After
+`login`/`logout` restart the agent (run the script again).
+
+#### Windows
+
+The agent is the same Python script as on the Mac. Setup (PowerShell in the `agent` folder):
+
+```
+powershell -ExecutionPolicy Bypass -File .\install_windows.ps1
+```
+
+This creates the venv, installs the packages and registers the task "Tally32 Agent" in the Task
+Scheduler (starts at login, hidden, restarts after a crash). Log:
+`%LOCALAPPDATA%\tally32\tally32.log`. Remove it with `-Uninstall`. Sign in to Microsoft 365:
+`.venv\Scripts\python.exe tally_agent.py login` or with the button in the web interface.
+
+Test plan (Windows 11, 21.10.2026: steps 1 to 5 passed):
+
+1. Connect the upper USB-C socket of the display to the docking station. Device Manager shows
+   "USB Serial Device (COMx)" and "USB JTAG/serial debug unit". The driver is included in Windows.
+2. `.venv\Scripts\python.exe tally_agent.py status` runs without errors.
+3. `.venv\Scripts\python.exe tally_agent.py demo` finds the display and plays the states.
+4. Teams or 3CX call: the display switches to ON AIR with the correct source.
+5. Win+L, wait 5 minutes: the screen saver appears, the log says "Bildschirm gesperrt" (screen
+   locked).
+6. `install_windows.ps1`, sign out and sign in again: the agent starts by itself.
+7. Undock the notebook: the display shows NOT AT DESK or "back approx.".
+
+If Python is not allowed on the PC: package the agent with PyInstaller into a single
+`tally32-agent.exe` (build it on a computer with Python).
+
+#### Switching accounts (e.g. private account → company account)
+
+In the display menu under "Microsoft 365", in the web interface "Start new sign-in" or with
+`tally_agent.py login`: the previous account is replaced. Set `"booking": true` in `config.json`
+first, otherwise the permission to book is missing. Depending on its settings the new tenant needs
+an admin approval for the permissions `Calendars.ReadBasic`, `Presence.Read` and
+`Calendars.ReadWrite` (client "Microsoft Graph Command Line Tools" or your own app registration,
+see below). Without approval only microphone and screen lock work.
+
+Approval without PowerShell: sign in once with the admin account and tick "Consent on behalf of
+your organization" when asked. The agent then rejects the admin account (no mailbox, the previous
+account stays), but the approval is granted. Then sign in with your own account. The agent never
+accepts accounts without an Exchange mailbox.
+
+#### Microsoft 365
+
+By default the public client "Microsoft Graph Command Line Tools" is used with device code login
+(permissions `Calendars.ReadBasic`, `Presence.Read`, with booking `Calendars.ReadWrite`, tenant
+`common`). Depending on the tenant an admin has to approve the permissions once, after that normal
+users can sign in. The signed-in account needs an Exchange mailbox, otherwise only the Teams
+presence is available. If the tenant blocks the client entirely, create your own app registration
+(public client, "Allow public client flows" on, delegated permissions as above) and enter its ID as
+`client_id`. With `"presence": false` only the calendar is queried.
+
+#### Limitations
+
+- A 3CX **desk phone** does not use a microphone on the computer. This would need the 3CX Call
+  Control API.
+- Microphone detection per program needs macOS 14.2 or later. Older versions only detect
+  "microphone in use".
+- The Windows version is tested on Windows 11 (microphone, lock, screen saver). Still open:
+  autostart after a new sign-in, undocking and Microsoft 365.
+
+### Protocol (115200 baud, one line per message)
+
+```
+HELLO                                       -> TALLY32 1
+ST <call|busy|away|free> <HH:MM> <free_from> <free_until> <source> [<free|busy|away>]
+```
+
+The last field is only sent with `call`: the state without the call. `free_from` and `free_until`
+then belong to this state, and the display shows it with a pulsing ON AIR above it.
+
+Empty fields as `-`, spaces in the source as `_`. With call/busy/away `free_from` is the end of the
+current block, with free it is the end of the next block ("free again from"). If it is no longer
+today, it is sent as `DD.MM.`.
+
+Offline buffer (agent to display, every 30 s):
+
+```
+TM <unix_utc> <utc_offset_s>
+LK <0|1>                                   computer locked (every 2 s)
+CB <yyyy-mm-dd> <HHMM-HHMMb|a,...|->      b = busy, a = away
+STATUS                                     -> diagnostics: state shown
+```
+
+Meeting booking:
+
+```
+SLOTS <duration> <earliest_min> <latest_min> <day_mask> <lunch_from> <lunch_until>
+SL <yyyy-mm-dd> <weekday> <HHMM,...|->   ...   SL END
+BOOK <yyyy-mm-dd> <HH:MM> <duration> <email> <title>
+BK OK | BK ERR <text>
+```
+
+Settings (stored in NVS):
+
+```
+SET flip 1          rotate display by 180 degrees
+SET bright 180      brightness 12 to 255
+SET demo 1          demo mode on (0 = off)
+```
+
+### Licence
+
+Tally32 Basic is licensed under the **PolyForm Noncommercial License 1.0.0**
+([LICENSE.md](LICENSE.md)). Use for noncommercial purposes is permitted: private use and use by
+charitable organisations, educational and research institutions and public bodies, also with
+modifications and distribution for these purposes.
+
+**Commercial use is not permitted**, not even in part: neither use within a company nor
+integration into a product nor operation as a service. A commercial licence is available for this.
+Contact: Oliver Timme, hello@timme-security.ch. Third-party components keep their own licences,
+they are listed in [NOTICE.txt](NOTICE.txt).

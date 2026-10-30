@@ -728,8 +728,49 @@ class StatusSource:
         }
 
 
-def line_for(st):
-    src = st["src"].replace(" ", "_") or "-"
+# ============================================================== Sprache am Display
+# Das Display meldet seine Sprache mit "LANG de|en" (nach TALLY32 und bei jeder
+# Umstellung). Texte fuers Display entstehen auf Deutsch und werden erst beim
+# Senden uebersetzt, Log und Konsole bleiben Deutsch. Unbekannte Texte (z. B.
+# Meldungen von Microsoft) gehen unveraendert durch.
+LANGS = ("de", "en")
+DISPLAY_EN = {
+    # Quelle in ST-Zeilen
+    "Termin im Kalender": "Calendar appointment",
+    "laut Kalender": "per calendar",
+    "Bitte nicht st\u00f6ren": "Do not disturb",
+    "Mikrofon": "Microphone",
+    # Buchung (SL ERR / BK ERR)
+    "Buchung im Agenten ausgeschaltet": "Booking is turned off in the agent",
+    "Kein Microsoft-Konto angemeldet": "No Microsoft account signed in",
+    "Keine Wochentage freigegeben": "No weekdays enabled",
+    "Ungueltige Angaben": "Invalid details",
+    "Zeit liegt in der Vergangenheit": "Time is in the past",
+    "Zeit ist inzwischen belegt": "Time is no longer free",
+    "Schreibrecht fehlt, im Setup neu bei Office 365 anmelden":
+        "No write permission, sign in to Office 365 again in setup",
+    "nicht angemeldet (tally_agent.py login)": "not signed in (tally_agent.py login)",
+    # Anmeldung (LR ERR)
+    "Device Flow fehlgeschlagen": "Device flow failed",
+    "Anmeldung fehlgeschlagen": "Sign-in failed",
+    "Dieses Konto hat kein Postfach. Mit dem eigenen Konto anmelden.":
+        "This account has no mailbox. Sign in with your own account.",
+    "Fehler": "Error",
+}
+
+
+def tr(text, lang):
+    """Text fuers Display in der Sprache des Displays."""
+    return DISPLAY_EN.get(text, text) if lang == "en" else text
+
+
+def field(text, lang, n):
+    """Fehlertext als ein Feld fuers Display: uebersetzt, gekuerzt, Leerzeichen als _."""
+    return tr(str(text), lang)[:n].replace(" ", "_")
+
+
+def line_for(st, lang="de"):
+    src = tr(st["src"], lang).replace(" ", "_") or "-"
     base = f" {st['base']}" if st.get("base") else ""   # beim Gespraech: Zustand darunter
     return f"ST {st['mode']} {st['clock']} {st['free_at']} {st['next_at']} {src}{base}\n"
 
@@ -835,6 +876,7 @@ class BookingWorker:
 
     def __init__(self, cfg, src, out):
         self.cfg, self.src, self.out = cfg, src, out
+        self.lang = "de"                              # Sprache des Displays (LANG)
         self.lock = threading.Lock()
 
     def handle(self, line):
@@ -857,7 +899,7 @@ class BookingWorker:
             except Exception as e:  # noqa: BLE001 - Fehler soll aufs Display
                 log("Buchung:", e)
                 tag = "SL" if parts[0] == "SLOTS" else "BK"
-                self.out.put(f"{tag} ERR {str(e)[:80].replace(' ', '_')}")
+                self.out.put(f"{tag} ERR {field(e, self.lang, 80)}")
 
     def _slots(self, dur, earliest, latest, mask, lunch=(0, 0)):
         now = dt.datetime.now().astimezone()
@@ -900,6 +942,7 @@ class LoginWorker:
 
     def __init__(self, cfg, src, out):
         self.cfg, self.src, self.out = cfg, src, out
+        self.lang = "de"                              # Sprache des Displays (LANG)
         self.thread = None
 
     def start(self):
@@ -929,7 +972,7 @@ class LoginWorker:
             self.out.put(f"CAP write {1 if self.src.can_write() else 0}")
         except Exception as e:  # noqa: BLE001 - Fehler soll aufs Display
             log("Anmeldung fehlgeschlagen:", e)
-            msg = str(e)[:90].replace(" ", "_") or "Fehler"
+            msg = field(e, self.lang, 90) or tr("Fehler", self.lang)
             self.out.put(f"LR ERR {msg}")
 
 
@@ -939,6 +982,7 @@ def run(cfg):
     login = LoginWorker(cfg, src, out)
     booking = BookingWorker(cfg, src, out)
     dev, last, rx = None, None, b""
+    lang = "de"                                     # bis das Display LANG meldet
     locked = False
     t_send = t_account = 0
     while True:
@@ -950,11 +994,30 @@ def run(cfg):
                 continue
             dev.timeout = 0
             last, rx, t_account = None, b"", 0
+            lang = login.lang = booking.lang = "de"   # neue Verbindung: wieder Standard
         try:
+            # Meldungen vom Geraet zuerst: ein LANG direkt nach TALLY32 gilt so schon
+            # fuer die erste ST-Zeile
+            rx += dev.read(dev.in_waiting or 0)
+            while b"\n" in rx:
+                ln, rx = rx.split(b"\n", 1)
+                ln = ln.decode("utf-8", "replace").strip()
+                if ln == "LOGIN":
+                    login.start()
+                elif ln.startswith(("SLOTS ", "BOOK ")):
+                    booking.handle(ln)
+                elif ln.startswith("LOG "):
+                    log("Geraet:", ln[4:])
+                elif ln.startswith("LANG "):
+                    new = ln[5:].strip().lower()
+                    if new in LANGS and new != lang:
+                        log("Sprache am Display:", new)
+                        lang = login.lang = booking.lang = new
+                        t_send = 0                    # Status gleich in der neuen Sprache
             now = time.time()
             if now - t_send >= cfg["send_interval_s"]:
                 t_send = now
-                line = line_for(src.current())
+                line = line_for(src.current(), lang)
                 if line != last:
                     log(line.strip())
                     last = line
@@ -973,17 +1036,6 @@ def run(cfg):
                 out.put(f"CAP write {1 if src.can_write() else 0}")
             while not out.empty():
                 dev.write((out.get() + "\n").encode("utf-8"))
-            # Meldungen vom Geraet
-            rx += dev.read(dev.in_waiting or 0)
-            while b"\n" in rx:
-                ln, rx = rx.split(b"\n", 1)
-                ln = ln.decode("utf-8", "replace").strip()
-                if ln == "LOGIN":
-                    login.start()
-                elif ln.startswith(("SLOTS ", "BOOK ")):
-                    booking.handle(ln)
-                elif ln.startswith("LOG "):
-                    log("Geraet:", ln[4:])
         except (serial.SerialException, OSError) as e:
             log("USB getrennt:", e)
             try:
@@ -995,14 +1047,28 @@ def run(cfg):
         time.sleep(0.2)
 
 
+def read_lang(dev, wait=1.0):
+    """Sprache aus der LANG-Zeile, die das Display nach TALLY32 schickt (sonst "de")."""
+    end = time.time() + wait
+    dev.timeout = 0.2
+    while time.time() < end:
+        ln = dev.readline().decode("utf-8", "replace").strip()
+        if ln.startswith("LANG ") and ln[5:].strip().lower() in LANGS:
+            return ln[5:].strip().lower()
+    return "de"
+
+
 def demo(cfg):
     dev = find_device(cfg)
     if not dev:
         sys.exit("Tally32-Geraet nicht gefunden.")
+    lang = read_lang(dev)
     clk = time.strftime("%H:%M")
     for ln in (f"ST free {clk} 16:00 15:00 -", f"ST free {clk} - - -", f"ST busy {clk} 14:30 - Termin_im_Kalender",
                f"ST away {clk} 23.10. - laut_Kalender", f"ST away {clk} - - Teams",
                f"ST call {clk} 14:30 - Teams", f"ST call {clk} - - 3CX", f"ST free {clk} - - -"):
+        head, src = ln.rsplit(" ", 1)
+        ln = f"{head} {tr(src.replace('_', ' '), lang).replace(' ', '_')}"
         print(ln)
         dev.write((ln + "\n").encode())
         time.sleep(4)
