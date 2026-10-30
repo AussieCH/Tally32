@@ -560,7 +560,11 @@ static void field(char* dst, size_t n, const char* tok) {
 
 static void handleLine(char* line) {
   if (bookingSerial(line)) return;
-  if (strncmp(line, "HELLO", 5) == 0) { Serial.println("TALLY32 1"); return; }
+  if (strncmp(line, "HELLO", 5) == 0) {          // Agent meldet sich: Kennung und Sprache der Oberflaeche
+    Serial.println("TALLY32 1");
+    Serial.println(uiLang ? "LANG en" : "LANG de");
+    return;
+  }
   if (strncmp(line, "TAP ", 4) == 0) {           // Diagnose: Antippen nachstellen (Bildschirmfotos)
     int x = 0, y = 0;                            // TAP menu = Menue oeffnen (wie 3 s auf das Logo)
     if (!strcmp(line + 4, "menu")) menuOpen();
@@ -597,6 +601,7 @@ static void handleLine(char* line) {
     if (sscanf(line + 4, "%15s %d", key, &v) == 2) {
       if (!strcmp(key, "demo")) { demoMode = v != 0; demoSave(); Serial.println("OK"); return; }
       if (!strcmp(key, "saver")) { if (v) saverStart(); else saverStop(); Serial.println("OK"); return; }   // Test
+      if (!strcmp(key, "lang")) { langSet(v); Serial.println("OK"); return; }   // 0 Deutsch, 1 English
 #if defined(BOARD_JC8012)
       if (!strcmp(key, "touchlog")) { gsl_log = v != 0; Serial.println("OK"); return; }   // Rohbytes des Touch
       if (!strcmp(key, "touchinit")) { gsl_ok = false; gsl_begin(TOUCH_RST, TOUCH_INT); Serial.println("OK"); return; }

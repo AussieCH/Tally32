@@ -37,6 +37,7 @@ void colorsSave();
 // ------------------------------------------------------------ Anzeige
 extern uint8_t brightness;
 extern bool flip;
+extern uint8_t uiLang;           // Sprache der Oberflaeche: 0 Deutsch, 1 English (NVS "lang")
 extern String ownerName;        // Name der Person im Banner oben (leer = Konto vom Agent)
 void displayLoad();
 void displayApply(bool save);
@@ -59,6 +60,7 @@ void demoSave();
 // ------------------------------------------------------------ Datenquelle
 // Befehl an den Agenten auf dem Computer (USB-Seriell)
 void sendCmd(const char* line);
+void langSet(uint8_t l);        // Sprache setzen, speichern, dem Agenten melden (LANG de|en)
 
 // ------------------------------------------------------------ Zugang
 // Solange kein eigenes Passwort gespeichert ist, gilt das Standardpasswort

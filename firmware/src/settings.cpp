@@ -16,6 +16,7 @@ const Colors DEFAULT_COLORS = { 0xD2BA62, 0xA8E6A0, 0xE06A00, 0x1A2A6A, 0x8C0810
 Colors colors = DEFAULT_COLORS;
 uint8_t brightness = 200;
 bool flip = false;
+uint8_t uiLang = 0;
 String ownerName;
 Login365 login365 = { L_IDLE, "", "", "", 0 };
 bool bookingEnabled = false;
@@ -55,6 +56,7 @@ void displayLoad() {
   Preferences p; p.begin(NS, true);
   flip = p.getBool("flip", false);
   brightness = p.getUChar("bright", 200);
+  uiLang = p.getUChar("lang", 0) ? 1 : 0;
   ownerName = p.getString("owner", "");
   p.end();
 }
@@ -67,6 +69,7 @@ void displayApply(bool save) {
     Preferences p; p.begin(NS, false);
     p.putBool("flip", flip);
     p.putUChar("bright", brightness);
+    p.putUChar("lang", uiLang);
     p.putString("owner", ownerName);
     p.end();
   }
@@ -102,6 +105,14 @@ void bookingSave() {
 
 // Befehl an den Agenten auf dem Computer (USB)
 void sendCmd(const char* line) { Serial.println(line); }
+
+// Sprache setzen (0 Deutsch, 1 English): speichern, neu zeichnen und dem Agenten melden,
+// damit er seine Texte fuers Display (Quelle, Fehlermeldungen) in derselben Sprache schickt.
+void langSet(uint8_t l) {
+  uiLang = l ? 1 : 0;
+  displayApply(true);
+  sendCmd(uiLang ? "LANG en" : "LANG de");
+}
 
 // ------------------------------------------------------------ Demomodus
 void demoSave() {

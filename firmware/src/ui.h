@@ -23,6 +23,11 @@ constexpr int ux(int x) { return x * SCR_W / 1024; }
 constexpr int uy(int y) { return y * SCR_H / 600; }
 constexpr int us(int v) { return v * SCR_H / 600; }
 
+// Zweisprachige Texte: TR("deutsch", "english") waehlt nach uiLang (Menue "Sprache / Language").
+// Nur zur Laufzeit verwenden, nicht in statischen Initialisierungen.
+extern uint8_t uiLang;
+#define TR(de, en) (uiLang ? (en) : (de))   // nicht "T": kollidiert mit Template-Parametern
+
 struct Theme { uint16_t bg, fg, dim; };
 Theme themeFrom(uint32_t bg);                   // Schrift passend zur Helligkeit
 uint16_t c565(uint32_t c);
