@@ -146,14 +146,6 @@ static void drawLang() {
 // ------------------------------------------------------------ Anzeige
 static const Rect R_BR_MINUS = { ux(300), uy(120), ux(90), uy(72) }, R_BR_PLUS = { ux(810), uy(120), ux(90), uy(72) };
 static const Rect R_FLIP = { ux(600), uy(250), ux(200), uy(72) };
-static const Rect R_NAME = { ux(600), uy(360), ux(300), uy(72) };   // Name in der Kopfzeile aendern
-static char nameWork[48];
-
-static void onNameDone(bool ok) {
-  if (!ok) return;
-  ownerName = nameWork;
-  displayApply(true);                            // speichert und zeichnet neu
-}
 static const int BAR_X = ux(410), BAR_W = ux(384);
 
 static void drawBrightness() {
@@ -174,10 +166,6 @@ static void drawDisplay() {
   drawBrightness();
   label(TR("Display um 180 Grad drehen", "Rotate display 180 degrees"), R_FLIP.cy());
   toggle(R_FLIP, flip);
-  label(TR("Name in der Kopfzeile", "Name in the header"), R_NAME.cy() - uy(16));
-  txt(ownerName.length() ? ownerName.c_str() : TR("(leer, zeigt das Konto vom Agent)", "(empty, shows the agent's account)"),
-      ux(40), R_NAME.cy() + uy(18), 20, pDim(), pBg(), middle_left);
-  button(R_NAME, TR("\xC3\x84ndern", "Change"), B_NORMAL);
   button(R_BACK, TR("Zur\xC3\xBC" "ck", "Back"), B_NORMAL);
 }
 
@@ -275,16 +263,31 @@ static void drawWifi() {
 
 // ------------------------------------------------------------ Microsoft 365
 static const char* o365Msg = "";
+// Name in der Kopfzeile (wessen Kalender das Display zeigt), gehoert zum Konto (Oliver, 31.10.2026)
+static const Rect R_NAME = { SCR_W - ux(240), uy(290) - uy(34), ux(220), uy(68) };
+static char nameWork[48];
+
+static void onNameDone(bool ok) {
+  if (!ok) return;
+  ownerName = nameWork;
+  displayApply(true);                            // speichert und zeichnet neu
+}
 
 static void drawO365() {
   header("Microsoft 365");
   kv(TR("Konto", "Account"), account[0] ? account : TR("keins angemeldet", "none signed in"), uy(120));
   kv(TR("Kalender schreiben", "Write calendar"), canWrite ? TR("ja (Buchung m\xC3\xB6glich)", "yes (booking possible)") : TR("nein", "no"), uy(175));
   kv(TR("Verbindung", "Connection"), linked ? TR("Agent verbunden", "agent connected") : TR("kein Agent", "no agent"), uy(230));
+  txt(TR("Name oben", "Name in header"), ux(60), R_NAME.cy(), 26, pDim(), pBg(), middle_left);
+  const char* nm = *ownerShown() ? ownerShown() : TR("(leer, zeigt das Konto)", "(empty, shows the account)");
+  lcd.setFont(smooth(26));
+  txt(nm, ux(380), R_NAME.cy(), lcd.textWidth(nm) > R_NAME.x - ux(400) ? 20 : 26,
+      *ownerShown() ? pInk() : pDim(), pBg(), middle_left);
+  button(R_NAME, TR("\xC3\x84ndern", "Change"), B_NORMAL);
   txt(TR("Die Anmeldung l\xC3\xA4uft \xC3\xBC" "ber den Agenten, Code und Adresse erscheinen hier.",
          "Sign-in runs through the agent, code and address appear here."),
-      SCR_W / 2, uy(320), 20, pDim(), pBg());
-  if (*o365Msg) txt(o365Msg, SCR_W / 2, uy(370), 26, pInk(), pBg());
+      SCR_W / 2, uy(370), 20, pDim(), pBg());
+  if (*o365Msg) txt(o365Msg, SCR_W / 2, uy(420), 26, pInk(), pBg());
   button(R_BACK, TR("Zur\xC3\xBC" "ck", "Back"), B_NORMAL);
   button(R_RIGHT, TR("Neues Konto verbinden", "Connect new account"), !linked ? B_DISABLED : B_PRIMARY, 20);
 }
@@ -441,12 +444,6 @@ static void tapDisplay(int x, int y) {
     drawBrightness();
     return;
   }
-  if (R_NAME.in(x, y)) {                         // Menue schliessen, Tastatur der Buchung nutzen
-    strncpy(nameWork, ownerName.c_str(), sizeof(nameWork) - 1); nameWork[sizeof(nameWork) - 1] = '\0';
-    menuClose();
-    textEntryOpen(TR("Name in der Kopfzeile", "Name in the header"), nameWork, 41, onNameDone);   // 40 Zeichen wie im Webinterface
-    return;
-  }
   if (R_FLIP.in(x, y)) {
     flip = !flip;
     board_set_rotation(flip);
@@ -514,6 +511,12 @@ static void tapWifi(int x, int y) {
 
 static void tapO365(int x, int y) {
   if (R_BACK.in(x, y)) { go(M_MAIN); return; }
+  if (R_NAME.in(x, y)) {                         // Menue schliessen, Tastatur der Buchung nutzen
+    strncpy(nameWork, ownerName.c_str(), sizeof(nameWork) - 1); nameWork[sizeof(nameWork) - 1] = '\0';
+    menuClose();
+    textEntryOpen(TR("Name in der Kopfzeile", "Name in the header"), nameWork, 41, onNameDone);   // 40 Zeichen wie im Webinterface
+    return;
+  }
   if (!R_RIGHT.in(x, y)) return;
   if (!linked) { o365Msg = TR("Kein Agent verbunden.", "No agent connected."); drawO365(); return; }
   menuClose();                                   // Anmeldebildschirm zeigt Code und Adresse

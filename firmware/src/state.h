@@ -40,6 +40,7 @@ extern uint8_t brightness;
 extern bool flip;
 extern uint8_t uiLang;           // Sprache der Oberflaeche: 0 Deutsch, 1 English (NVS "lang")
 extern String ownerName;        // Name der Person im Banner oben (leer = Konto vom Agent)
+const char* ownerShown();       // angezeigter Name: Ersatz fuer Bildschirmfotos (USB NAME) oder ownerName
 void displayLoad();
 void displayApply(bool save);
 

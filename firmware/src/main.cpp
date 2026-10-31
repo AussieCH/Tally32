@@ -340,6 +340,10 @@ static void drawConnIcon(bool on, int xRight, int y0) {
 // bis zum Neustart. Ein unmoegliches Datum kennzeichnet Bilder als Demo-Bilder.
 static char shotDate[12] = "";
 const char* shotDateText() { return shotDate; }
+// Ebenso der Name (USB "NAME jasmin.muster@mail.ch"): nur im Speicher, nie gespeichert, damit
+// auf Bildschirmfotos kein echter Name steht.
+static char shotName[48] = "";
+const char* ownerShown() { return shotName[0] ? shotName : ownerName.c_str(); }
 
 // Kopfzeile: Logo, Datum, Name und Uhrzeit
 static void drawHeader() {
@@ -354,7 +358,7 @@ static void drawHeader() {
   lcd.setFont(smooth(26));
   const int tx = SCR_W - ux(24), tw = lcd.textWidth("00:00");
   sTxt(cur.clock[0] ? cur.clock : "--:--", tx, BAN_H / 2, 26, fg, bg, middle_right);
-  const char* name = ownerName.length() ? ownerName.c_str() : account;
+  const char* name = *ownerShown() ? ownerShown() : account;
   if (*name) {
     const int nx = SPLIT + ux(90), w = tx - tw - ux(36) - nx;
     sTxt(name, nx, BAN_H / 2, fitSize(name, w, 26, 20), fg, bg, middle_left);
@@ -745,6 +749,12 @@ static void handleLine(char* line) {
   }
   if (strncmp(line, "DATE ", 5) == 0) {          // Diagnose: Datum fuer Bildschirmfotos ("DATE -" = echtes)
     field(shotDate, sizeof(shotDate), line + 5);
+    uiVersion++;
+    Serial.println("OK");
+    return;
+  }
+  if (strncmp(line, "NAME ", 5) == 0) {          // Diagnose: Name fuer Bildschirmfotos ("NAME -" = echter)
+    field(shotName, sizeof(shotName), line + 5);
     uiVersion++;
     Serial.println("OK");
     return;

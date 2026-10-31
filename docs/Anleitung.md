@@ -286,11 +286,11 @@ nach 60 Sekunden ohne Berührung schliesst es sich von selbst.
 | Kachel | Inhalt |
 |---|---|
 | Demomodus | alle Zustände der Reihe nach vorführen, siehe [Abschnitt 8](#8-ohne-notebook-bildschirmschoner-demomodus) |
-| Anzeige | Helligkeit, Display um 180 Grad drehen, Name in der Kopfzeile |
+| Anzeige | Helligkeit, Display um 180 Grad drehen |
 | Sprache / Language | Deutsch oder English für Display, Webinterface und die Texte des Agenten |
 | Farben | Farbe des Balkens je Zustand |
 | Terminbuchung | Knopf ein oder aus, Zeitfenster, Wochentage, Mittagspause |
-| Microsoft 365 | angemeldetes Konto, neues Konto verbinden |
+| Microsoft 365 | angemeldetes Konto, Name in der Kopfzeile, neues Konto verbinden |
 | WLAN | Einrichtungs-WLAN für das Webinterface ein oder aus |
 | Info | Version, Display, Verbindung, Konto, Einrichtungs-WLAN, Uhr, letzter Neustart |
 | PIN ändern | neuen PIN zweimal eingeben |
@@ -301,8 +301,6 @@ nach 60 Sekunden ohne Berührung schliesst es sich von selbst.
 
 - **Helligkeit** mit Minus und Plus.
 - **Display um 180 Grad drehen**, zum Beispiel wenn das Kabel oben besser passt.
-- **Name in der Kopfzeile:** Ist er leer, steht dort das angemeldete Microsoft-Konto. Mit "Ändern"
-  einen eigenen Namen eintippen, zum Beispiel "Jasmin Muster".
 
 ### Sprache / Language
 
@@ -338,6 +336,9 @@ Auslieferungszustand wieder her.
 Zeigt das angemeldete Konto, ob der Agent in den Kalender schreiben darf ("Kalender schreiben", nötig
 für die Buchung) und ob der Agent verbunden ist. "Neues Konto verbinden" startet die Anmeldung wie in
 [Abschnitt 5.4](#54-bei-microsoft-365-anmelden) und ersetzt das bisherige Konto.
+
+**Name oben** ist der Name in der Kopfzeile über der rechten Fläche. Ist er leer, steht dort das
+angemeldete Microsoft-Konto. Mit "Ändern" einen eigenen Namen eintippen, zum Beispiel "Jasmin Muster".
 
 ### WLAN (Einrichtungs-WLAN)
 

@@ -115,11 +115,11 @@ nach 60 Sekunden ohne Berührung schliesst es sich.
 | Kachel | Inhalt |
 |---|---|
 | Demomodus | starten bzw. beenden, das Menü schliesst sich dabei |
-| Anzeige | Helligkeit, Display um 180° drehen, Name in der Kopfzeile |
+| Anzeige | Helligkeit, Display um 180° drehen |
 | Sprache / Language | Deutsch oder English für Display, Webinterface und die Texte des Agenten |
 | Farben | sechs Farben pro Zustand, jede mit Helligkeitswert in Prozent |
 | Terminbuchung | Knopf ein/aus, Zeitfenster, Wochentage, Mittagspause |
-| Microsoft 365 | angemeldetes Konto, neues Konto verbinden (über den Agent) |
+| Microsoft 365 | angemeldetes Konto, Name in der Kopfzeile, neues Konto verbinden (über den Agent) |
 | WLAN | Einrichtungs-WLAN ein/aus, Netzname, Passwort, Adresse |
 | Info | Version, Display, Verbindung, Konto, Einrichtungs-WLAN mit Adresse, Echtzeituhr, letzter Neustart |
 | PIN ändern | neuen PIN zweimal eingeben |
@@ -170,6 +170,12 @@ cd firmware && pio run -e guition-p4 -t upload --upload-port /dev/cu.usbmodem312
 ```
 
 Für das 10"-Display (GUITION JC8012P4A1C) die Umgebung `guition-p4-10`.
+
+Die falsche Variante startet auf dem anderen Display nicht, es bleibt dunkel und ist nur noch
+über den Download-Modus erreichbar (BOOT gedrückt halten beim Einstecken, dann richtig flashen).
+Wer beide Displays hat, flasht sicherer mit `tools/flash.py 7` bzw. `tools/flash.py 10`: Das
+Skript prüft vorher die USB-Seriennummer des angeschlossenen Displays (Zuordnung in
+`~/.config/tally32/displays.json`, z. B. `{"12:34:56:78:9A:BC": "7"}`) und flasht nur, wenn sie passt.
 
 Unter Windows ist der Port das "Serielle USB-Gerät" (z. B. `COM6`). Den Agenten
 vorher anhalten, er hält den Port offen.
@@ -455,11 +461,11 @@ closes.
 | Tile | Content |
 |---|---|
 | Demo mode | start or stop, the menu closes |
-| Display | brightness, rotate display by 180°, name in the header |
+| Display | brightness, rotate display by 180° |
 | Sprache / Language | Deutsch or English for the display, the web interface and the texts sent by the agent |
 | Colours | six colours per state, each with a brightness value in percent |
 | Meeting booking | button on/off, time window, weekdays, lunch break |
-| Microsoft 365 | signed-in account, connect new account (via the agent) |
+| Microsoft 365 | signed-in account, name in the header, connect new account (via the agent) |
 | Wi-Fi | setup Wi-Fi on/off, network name, password, address |
 | Info | version, display, connection, account, setup Wi-Fi with address, real-time clock, last restart |
 | Change PIN | enter the new PIN twice |
@@ -506,6 +512,12 @@ cd firmware && pio run -e guition-p4 -t upload --upload-port /dev/cu.usbmodem312
 ```
 
 For the 10" display (GUITION JC8012P4A1C) use the environment `guition-p4-10`.
+
+The wrong variant does not start on the other display. It stays dark and can only be reached in
+download mode (hold BOOT while plugging in, then flash the right one). With both displays, flash
+more safely with `tools/flash.py 7` or `tools/flash.py 10`: the script first checks the USB serial
+number of the connected display (mapping in `~/.config/tally32/displays.json`, e.g.
+`{"12:34:56:78:9A:BC": "7"}`) and only flashes if it matches.
 
 On Windows the port is the "USB Serial Device" (e.g. `COM6`). Stop the agent first, it keeps the
 port open.

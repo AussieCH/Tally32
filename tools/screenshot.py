@@ -113,6 +113,7 @@ def demo(s, outdir):
     os.makedirs(outdir, exist_ok=True)
     s.write(f"DATE {DATE}\n".encode())
     s.write(f"AC {NAME}\n".encode())           # Kopfzeile nicht leer, solange kein Name gesetzt ist
+    s.write(f"NAME {NAME}\n".encode())         # ersetzt einen gesetzten echten Namen bis zum Neustart
     s.write(b"SET demo 1\n")
     time.sleep(0.5)
     seen, last, n, t0 = set(), None, 0, time.time()

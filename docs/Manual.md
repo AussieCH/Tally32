@@ -287,11 +287,11 @@ one minute. After 60 seconds without a touch it closes by itself.
 | Tile | Content |
 |---|---|
 | Demo mode | show all states one after the other, see [section 8](#8-without-notebook-screen-saver-demo-mode) |
-| Display | brightness, rotate display by 180 degrees, name in the header |
+| Display | brightness, rotate display by 180 degrees |
 | Sprache / Language | Deutsch or English for the display, the web interface and the texts sent by the agent |
 | Colours | colour of the bar per state |
 | Meeting booking | button on or off, time window, weekdays, lunch break |
-| Microsoft 365 | signed-in account, connect new account |
+| Microsoft 365 | signed-in account, name in the header, connect new account |
 | Wi-Fi | setup Wi-Fi for the web interface on or off |
 | Info | version, display, connection, account, setup Wi-Fi, clock, last restart |
 | Change PIN | enter the new PIN twice |
@@ -302,8 +302,6 @@ one minute. After 60 seconds without a touch it closes by itself.
 
 - **Brightness** with minus and plus.
 - **Rotate display by 180 degrees**, for example if the cable fits better at the top.
-- **Name in the header:** if it is empty, the signed-in Microsoft account is shown. Use "Change" to
-  type your own name, for example "Jasmin Muster".
 
 ### Sprache / Language
 
@@ -335,6 +333,9 @@ the states also differ clearly in brightness. "Default colours" restores the fac
 Shows the signed-in account, whether the agent may write to the calendar ("Write calendar", needed
 for booking) and whether the agent is connected. "Connect new account" starts the sign-in as in
 [section 5.4](#54-sign-in-to-microsoft-365) and replaces the previous account.
+
+**Name in header** is the name in the header above the right side. If it is empty, the signed-in
+Microsoft account is shown. Use "Change" to type your own name, for example "Jasmin Muster".
 
 ### Wi-Fi (setup Wi-Fi)
 
