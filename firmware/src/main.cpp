@@ -73,6 +73,15 @@ static time_t calSyncUtc = 0;                   // UTC beim letzten CB
 static char lastStand[8] = "";                  // Uhrzeit der letzten Daten
 // Text der Abwesenheitsnotiz (Outlook) vom Agenten, Tab = Zeilenumbruch, "" = keiner
 static char oofText[481] = "";
+// Beispieltext fuer den Demomodus (ersetzt nie den echten Text vom Agenten)
+static const char* demoOofText() {
+  return TR("Guten Tag\t\tIch bin vom 2. bis 13. November in den Ferien und lese meine E-Mails in dieser "
+            "Zeit nicht.\t\tIn dringenden F\xC3\xA4llen wenden Sie sich bitte an Max Muster, "
+            "max.muster@mail.ch oder 044 123 45 67.\t\tFreundliche Gr\xC3\xBCsse\tJasmin Muster",
+            "Hello\t\tI am on holiday from 2 to 13 November and will not read my e-mails during this "
+            "time.\t\tFor urgent matters please contact Max Muster, max.muster@mail.ch or "
+            "+41 44 123 45 67.\t\tKind regards\tJasmin Muster");
+}
 static const time_t CACHE_MAX_S = 16 * 3600;
 int rtcState = RTC_NONE;
 static uint32_t rtcWrittenMs = 0;
@@ -475,7 +484,7 @@ static int wrapText(const char* s, int w, String* out, int maxLines) {
 // Abwesenheitsnotiz rechts: Ueberschrift und Text linksbuendig, als Block senkrecht mittig
 // unter dem Verbindungssymbol. Leerzeilen (Absaetze) halb so hoch. Passt der Text in 26 px
 // nicht, dann in 20 px (nur 7", das 10" hat eine Textgroesse), sonst gekuerzt mit "...".
-static void drawOofText() {
+static void drawOofText(const char* text) {
   const uint16_t bg = c565(C_BG), fg = c565(C_TEXT), dim = c565(C_DIM);
   const int x0 = PX0 + ux(40), w = SCR_W - ux(40) - x0;
   const int top = BAR_Y0 + ICON_CONN_H + uy(16), bottom = BAR_Y1;
@@ -489,7 +498,7 @@ static void drawOofText() {
     size = sz;
     lcd.setFont(smooth(sz));
     lh = lcd.fontHeight() + uy(6);
-    n = wrapText(oofText, w, lines, MAXL);
+    n = wrapText(text, w, lines, MAXL);
     if (n > MAXL) n = MAXL;
     fit = used = 0;                              // so viele Zeilen passen
     while (fit < n) {
@@ -633,7 +642,8 @@ static void drawFull() {
   drawLeft(icon, ttl, sub, sub2);
 
   // Rechts: bei ON AIR pulsierend der Zustand, darunter Beschriftung und Uhrzeit, mittig
-  if (cur.mode == M_CLOSED && cur.oof && oofText[0]) drawOofText();
+  const char* oof = demoMode ? demoOofText() : oofText;
+  if (cur.mode == M_CLOSED && cur.oof && oof[0]) drawOofText(oof);
   else drawTimeCentered(label, hhmm, note, BAN_H, SCR_H, cur.mode == M_CALL ? "ON AIR" : "");
   if (bookingShown()) drawButton(TR("Termin buchen", "Book a meeting"));   // ohne Notebook keine Buchung moeglich
   shown = cur;
@@ -985,7 +995,7 @@ static void demoLoop() {
   struct tm t; localNow(t);
   snprintf(cur.clock, sizeof(cur.clock), "%02d:%02d", t.tm_hour, t.tm_min);
   if (millis() < next) return;
-  step = (step + 1) % 9;
+  step = (step + 1) % 10;
   next = millis() + SHOW_MS;
   Status s = { M_FREE, "", "", "", "", false, "" };
   strcpy(s.clock, cur.clock);
@@ -1001,6 +1011,8 @@ static void demoLoop() {
     case 6: cur = s; bookingDemoStart(); return;                                // Buchung vorfuehren
     case 8: s.mode = M_CLOSED; strcpy(s.src, TR("Feierabend", "After hours")); strcpy(s.freeAt, "07:00");
             strcpy(s.nextAt, "morgen"); break;                                  // ausserhalb der Arbeitszeit
+    case 9: s.mode = M_CLOSED; s.oof = true; strcpy(s.src, TR("Abwesend", "Away"));   // Abwesenheitsnotiz
+            strcpy(s.freeAt, "13.11."); break;
     default: break;                                                             // frei, keine Termine
   }
   cur = s;

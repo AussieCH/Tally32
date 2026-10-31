@@ -395,8 +395,8 @@ computer, the screen saver stays off, even after hours.
 
 ### Demo mode
 
-Turn it on and off in the menu or in the web interface. The display then shows all states in turn,
-a new one every 6 seconds, and demonstrates a booking once per round. Visitors can try "Book a
+Turn it on and off in the menu or in the web interface. The display then shows all states in turn
+(including an example automatic reply), a new one every 6 seconds, and demonstrates a booking once per round. Visitors can try "Book a
 meeting" themselves. The free slots are made up and nothing is booked. "DEMO" is shown at the top
 right. Demo mode stays on after a restart.
 

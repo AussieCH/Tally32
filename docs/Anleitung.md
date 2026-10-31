@@ -396,8 +396,8 @@ der Schoner aus, auch nach Feierabend.
 
 ### Demomodus
 
-Im Menü oder im Webinterface ein- und ausschalten. Das Display zeigt dann reihum alle Zustände, alle
-6 Sekunden einen neuen, und führt einmal pro Runde eine Buchung vor. Besucher können "Termin buchen"
+Im Menü oder im Webinterface ein- und ausschalten. Das Display zeigt dann reihum alle Zustände
+(auch eine Beispiel-Abwesenheitsnotiz), alle 6 Sekunden einen neuen, und führt einmal pro Runde eine Buchung vor. Besucher können "Termin buchen"
 selbst ausprobieren, die freien Zeiten sind erfunden und gebucht wird nichts. Oben rechts steht "DEMO".
 Der Demomodus bleibt über einen Neustart eingeschaltet.
 

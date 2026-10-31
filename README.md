@@ -153,7 +153,7 @@ Buchung oder Anmeldung und ohne Notebook.
 
 Im Menü am Display oder im Webinterface unter "Demomodus" ein- und ausschalten (bleibt über einen
 Neustart erhalten, per USB auch `SET demo 1` / `SET demo 0`). Das Display zeigt
-dann reihum alle Zustände (auch AUSSER HAUS), alle 6 Sekunden ein neuer, und führt
+dann reihum alle Zustände (auch AUSSER HAUS mit Abwesenheitsnotiz), alle 6 Sekunden ein neuer, und führt
 einmal pro Runde eine Buchung selbst vor. Besucher können den Knopf "Termin buchen" auch
 selbst ausprobieren: Die freien Zeiten sind erfunden (mit Zeitfenster,
 Mittagspause und Wochentagen aus dem Setup), gebucht wird nichts. Oben rechts
@@ -490,7 +490,7 @@ immediately. No screen saver in demo mode, during a booking or sign-in and witho
 
 Turn it on and off in the menu on the display or in the web interface under "Demo mode" (kept
 after a restart, over USB also `SET demo 1` / `SET demo 0`). The display then shows all states in
-turn (including OUT OF OFFICE), a new one every 6 seconds, and demonstrates a booking once per
+turn (including OUT OF OFFICE with an automatic reply), a new one every 6 seconds, and demonstrates a booking once per
 round. Visitors can also try the "Book a meeting" button themselves: the free slots are made up
 (with time window, lunch break and weekdays from the setup) and nothing is booked. "DEMO" is shown
 at the top right. Data from the computer is not shown during demo mode. Without the time from the

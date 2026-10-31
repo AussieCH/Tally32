@@ -117,7 +117,7 @@ def demo(s, outdir):
     time.sleep(0.5)
     seen, last, n, t0 = set(), None, 0, time.time()
     booking_shots = 0
-    while time.time() - t0 < 150 and len(seen) < 9:   # 9 Demo-Schritte
+    while time.time() - t0 < 170 and len(seen) < 10:  # 10 Demo-Schritte
         st = status(s)
         mode, booking = int(st.get("mode", 0)), st.get("booking") == "1"
         if booking:
@@ -129,7 +129,7 @@ def demo(s, outdir):
                 img.save(os.path.join(outdir, f"{n:02d}-buchung-{booking_shots}.png"))
                 print("gespeichert: buchung", booking_shots)
             continue
-        key = (mode, st.get("frei_ab"), st.get("frei_bis"), st.get("quelle"))
+        key = (mode, st.get("frei_ab"), st.get("frei_bis"), st.get("quelle"), st.get("oof"))
         if key != last and mode in NAMES:
             last = key
             time.sleep(1.0)                       # fertig zeichnen lassen
@@ -137,6 +137,8 @@ def demo(s, outdir):
             if img:
                 n += 1
                 name = NAMES[mode] + ("-" + st.get("quelle", "").lower().replace("_", "-") if mode == 4 else "")
+                if st.get("oof") == "1":
+                    name = "abwesenheitsnotiz"
                 img.save(os.path.join(outdir, f"{n:02d}-{name}.png"))
                 seen.add(key)
                 print("gespeichert:", name)
