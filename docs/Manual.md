@@ -115,8 +115,8 @@ appointment. "as of 09:45" tells you when the data was last updated. See
 <img src="screens/en/status-ausser-haus.png" width="480" alt="OUT OF OFFICE">
 
 Outside working hours ("After hours" or "Day off") with the time from which you are back. Working
-hours are the time window and the weekdays from the meeting booking settings. After 2 minutes
-without a touch the screen saver starts.
+hours are the time window and the weekdays from the meeting booking settings. If the computer is
+locked or not connected, the screen saver starts after 2 minutes without a touch.
 
 ### NO SIGNAL
 
@@ -369,10 +369,11 @@ menu under Info ("Real-time clock").
 
 ### Screen saver
 
-If the computer has been locked for 5 minutes, or nobody has touched the display for 2 minutes
-outside working hours, the screen saver starts: dark background, the logo moves slowly, "Tap Me"
+If the computer has been locked for 5 minutes, or outside working hours the computer is locked or
+not connected and nobody has touched the display for 2 minutes, the screen saver starts: dark background, the logo moves slowly, "Tap Me"
 jumps to a new position every 30 seconds. Tapping shows the normal screen again (the tap does
-nothing else). Unlocking the computer ends the screen saver immediately.
+nothing else). Unlocking the computer ends the screen saver immediately. As long as someone is working on the
+computer, the screen saver stays off, even after hours.
 
 ### Demo mode
 

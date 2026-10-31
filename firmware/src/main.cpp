@@ -137,7 +137,7 @@ const char* resetReasonText() {
 static bool screenLocked = false;
 static uint32_t lockedSince = 0, lastTapMs = 0;
 // Ausserhalb der Arbeitszeit (Buchungsfenster bookFrom/bookTo und bookDays): FREI und
-// NICHT AM PLATZ werden zu AUSSER HAUS, nach 2 min Ruhe kommt der Bildschirmschoner.
+// NICHT AM PLATZ werden zu AUSSER HAUS, bei gesperrtem Rechner nach 2 min Ruhe der Schoner.
 static bool afterHours = false;
 static uint32_t afterHoursSince = 0;
 static const uint32_t SAVER_AFTER_LOCK_MS = 5UL * 60 * 1000;
@@ -987,10 +987,11 @@ void loop() {
   applyAfterHours();
   bookingLoop();
   // Bildschirmschoner: bei gesperrtem Rechner (5 min) oder ausserhalb der Arbeitszeit
-  // (2 min), nicht in Demo/Buchung/Menue/Anmeldung
+  // (2 min), nicht in Demo/Buchung/Menue/Anmeldung. Auch nach Feierabend nur, wenn
+  // niemand am Rechner arbeitet (gesperrt oder kein Agent verbunden).
   bool quiet = !demoMode && !bookingActive() && !menuActive() && login365.st == L_IDLE;
   bool byLock = quiet && screenLocked && linked;
-  bool byHours = quiet && afterHours && cur.mode == M_CLOSED;
+  bool byHours = quiet && afterHours && cur.mode == M_CLOSED && (screenLocked || !linked);
   if (saverActive()) { if (!byLock && !byHours) saverStop(); else saverLoop(); }
   else if (millis() - lastTapMs >= SAVER_AFTER_TAP_MS &&
            ((byLock && millis() - lockedSince >= SAVER_AFTER_LOCK_MS) ||

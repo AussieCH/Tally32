@@ -115,7 +115,8 @@ Siehe [Ohne Notebook](#8-ohne-notebook-bildschirmschoner-demomodus).
 
 Ausserhalb der Arbeitszeit ("Feierabend" bzw. "Arbeitsfreier Tag") mit dem Zeitpunkt, ab dem Sie zurück
 sind. Die Arbeitszeit sind das Zeitfenster und die Wochentage aus den Einstellungen der Terminbuchung.
-Nach 2 Minuten ohne Berührung startet der Bildschirmschoner.
+Ist der Computer gesperrt oder nicht verbunden, startet nach 2 Minuten ohne Berührung der
+Bildschirmschoner.
 
 ### KEIN SIGNAL
 
@@ -369,10 +370,11 @@ Termine sind gespeichert, die Uhrzeit hält die Knopfzelle. Ob die Uhr läuft, s
 
 ### Bildschirmschoner
 
-Ist der Computer 5 Minuten gesperrt, oder ist ausserhalb der Arbeitszeit 2 Minuten niemand am Display,
-startet der Bildschirmschoner: dunkler Grund, das Logo wandert langsam, "Tap Me" springt alle
+Ist der Computer 5 Minuten gesperrt, oder ist ausserhalb der Arbeitszeit der Computer gesperrt bzw.
+nicht verbunden und 2 Minuten niemand am Display, startet der Bildschirmschoner: dunkler Grund, das Logo wandert langsam, "Tap Me" springt alle
 30 Sekunden weiter. Antippen zeigt wieder die normale Anzeige (der Tipp löst sonst nichts aus).
-Entsperren des Computers beendet den Schoner sofort.
+Entsperren des Computers beendet den Schoner sofort. Solange am Computer gearbeitet wird, bleibt
+der Schoner aus, auch nach Feierabend.
 
 ### Demomodus
 

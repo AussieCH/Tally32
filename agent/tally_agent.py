@@ -791,7 +791,7 @@ def probe(name):
         s = open_port(name)
     except (serial.SerialException, OSError):
         return None
-    deadline = time.time() + 6                    # falls Open doch resettet: Boot abwarten
+    deadline = time.time() + 20                   # falls Open doch resettet: Boot abwarten (Touch-Init kann dauern)
     while time.time() < deadline:
         s.write(b"HELLO\n")
         t = time.time() + 1
