@@ -54,6 +54,7 @@ static void iconBackspace(const Rect& r, Style st) {
   lcd.fillRoundRect(cx - 12, cy - 15, 38, 30, 4, c);
   lcd.drawWideLine(cx - 2, cy - 7, cx + 14, cy + 7, 2, b);
   lcd.drawWideLine(cx - 2, cy + 7, cx + 14, cy - 7, 2, b);
+  btnCustom([](const Rect& r, Style st, int) { iconBackspace(r, st); });
 }
 static void iconShift(const Rect& r, Style st) {
   button(r, nullptr, st);
@@ -61,6 +62,7 @@ static void iconShift(const Rect& r, Style st) {
   int cx = r.cx(), cy = r.cy();
   lcd.fillTriangle(cx, cy - 18, cx - 18, cy + 2, cx + 18, cy + 2, c);
   lcd.fillRect(cx - 8, cy + 2, 16, 14, c);
+  btnCustom([](const Rect& r, Style st, int) { iconShift(r, st); });
 }
 
 static void fmtDate(const Day& d, char* out, size_t n) {    // "Mo 20.10."
@@ -261,21 +263,23 @@ static Rect dayRect(int idx) {
   return { lx(20) + col * (w + 8), ly(row ? 262 : 104), w, ly(116) };
 }
 
+static void drawDayBtn(const Rect& r, Style st, int i) {
+  button(r, nullptr, st);
+  char d[16]; fmtDate(days[i], d, sizeof(d));
+  txt(d, r.cx(), r.y + ly(42), 26, btnFg(st), btnBg(st));
+  char n[16];
+  if (days[i].n) snprintf(n, sizeof(n), TR("%d frei", "%d free"), days[i].n); else strcpy(n, TR("belegt", "booked"));
+  const uint32_t nc = st == B_DISABLED ? pDim() : st == B_NORMAL ? mixRGB(pInk(), pBtn(), 30) : btnFg(st);
+  txt(n, r.cx(), r.y + ly(82), 20, nc, btnBg(st));
+  btnCustom(drawDayBtn, i);
+}
+
 static void drawDay() {
   char t1[48]; snprintf(t1, sizeof(t1), TR("Tag w\xC3\xA4hlen (%d Min)", "Choose a day (%d min)"), dur);
   header(t1);
   txt(TR("Diese Woche", "This week"), lx(20), ly(88), 20, pDim(), pBg(), middle_left);
   txt(TR("N\xC3\xA4" "chste Woche", "Next week"), lx(20), ly(246), 20, pDim(), pBg(), middle_left);
-  for (int i = 0; i < nDays; i++) {
-    Rect r = dayRect(i);
-    Style st = days[i].n ? B_NORMAL : B_DISABLED;
-    button(r, nullptr, st);
-    char d[16]; fmtDate(days[i], d, sizeof(d));
-    txt(d, r.cx(), r.y + ly(42), 26, btnFg(st), btnBg(st));
-    char n[16];
-    if (days[i].n) snprintf(n, sizeof(n), TR("%d frei", "%d free"), days[i].n); else strcpy(n, TR("belegt", "booked"));
-    txt(n, r.cx(), r.y + ly(82), 20, st == B_DISABLED ? pDim() : mixRGB(pInk(), pBtn(), 30), btnBg(st));
-  }
+  for (int i = 0; i < nDays; i++) drawDayBtn(dayRect(i), days[i].n ? B_NORMAL : B_DISABLED, i);
   button(R_BACK, TR("Zur\xC3\xBC" "ck", "Back"), B_NORMAL);
 }
 
@@ -369,7 +373,7 @@ static void go(Screen s) {
     case S_CONFIRM: drawConfirm(); break;
     case S_SEND:    drawMessage(TR("Termin wird gebucht", "Booking the meeting"), TR("einen Moment ...", "one moment ...")); break;
     case S_RESULT:  drawResult(); break;
-    default:        uiVersion++; break;          // Statusanzeige neu zeichnen
+    default:        btnClear(); uiVersion++; break;   // Statusanzeige neu zeichnen
   }
 }
 
@@ -408,32 +412,12 @@ void bookingOpen() {
   go(S_EMAIL);
 }
 
-// Gedrueckte Taste kurz hervorheben (Rueckmeldung beim Tippen), bookingLoop setzt sie zurueck
-static int pressR = -1, pressI = -1;
-static uint32_t pressAt = 0;
-static void keyUp() {
-  if (pressR < 0) return;
-  int r = pressR, i = pressI;
-  pressR = pressI = -1;
-  if (scr != S_EMAIL && scr != S_TITLE && scr != S_TEXT) return;
-  if (i >= rowLen(r)) return;
-  const char* k = kbRows()[r][i];
-  if (k[0] == '\x01') return;                    // Umschalttaste zeichnet sich selbst
-  char t[4]; keyText(k, scr != S_EMAIL && shift, t);
-  button(keyRect(r, i), t, B_NORMAL, 26);
-}
-
+// Tasten blitzen beim Antippen auf wie alle Knoepfe (widgets.h, btnPress)
 static bool tapKeys(int x, int y) {
-  keyUp();
   for (int r = 0; r < 4; r++)
     for (int i = 0; kbRows()[r][i]; i++) {
       if (!keyRect(r, i).in(x, y)) continue;
       const char* k = kbRows()[r][i];
-      if (k[0] != '\x01') {
-        char t[4]; keyText(k, scr != S_EMAIL && shift, t);
-        button(keyRect(r, i), t, B_PRIMARY, 26);
-        pressR = r; pressI = i; pressAt = millis();
-      }
       if (k[0] == '\x01') { shift = !shift; drawKeys(); return true; }
       char t[4]; keyText(k, scr != S_EMAIL && shift, t);
       append(t);
@@ -543,14 +527,41 @@ void bookingDemoStart() {
   go(S_EMAIL);
 }
 
-// naechstes Zeichen (UTF-8) aus src anhaengen, false wenn fertig
+// Die Vorfuehrung tippt sichtbar: der Knopf blitzt auf wie bei einem Besucher, etwas laenger
+static const uint32_t DEMO_FLASH_MS = 220;
+static int sPress = -1;
+static uint32_t sGen = 0;
+static void scriptDown(const Rect& r, uint32_t ms = DEMO_FLASH_MS) {
+  sGen = btnGen;
+  sPress = btnPress(r.cx(), r.cy(), ms);
+}
+static void scriptUp() { btnRelease(sPress, sGen); sPress = -1; }
+
+// Taste zu einem Zeichen der Vorfuehrung
+static bool charRect(const char* c, Rect& out) {
+  if (!strcmp(c, "@") && scr == S_EMAIL) { out = R_AT; return true; }
+  if (!strcmp(c, " ") && scr != S_EMAIL) { out = R_SPACE; return true; }
+  const bool upper = scr != S_EMAIL && shift;
+  for (int r = 0; r < 4; r++)
+    for (int i = 0; kbRows()[r][i]; i++) {
+      char t[4]; keyText(kbRows()[r][i], upper, t);
+      if (!strcmp(t, c)) { out = keyRect(r, i); return true; }
+    }
+  return false;
+}
+
+// naechstes Zeichen (UTF-8) aus src antippen, false wenn fertig
 static bool typeNext(const char* src) {
   size_t l = strlen(buf());
   if (!src[l]) return false;
   size_t n = 1;
   while (((uint8_t)src[l + n] & 0xC0) == 0x80) n++;
   char c[5] = {}; memcpy(c, src + l, n);
+  Rect r;
+  const bool key = charRect(c, r);
+  if (key) scriptDown(r, 70);
   append(c);
+  if (key) scriptUp();
   return true;
 }
 
@@ -560,19 +571,19 @@ static void scriptTick() {
   lastTouch = now;
   switch (sStep) {
     case 0: if (typeNext(S_EMAIL_TXT)) { sNext = now + 110; return; } sNext = now + 1000; break;
-    case 1: shift = true; go(S_TITLE); sNext = now + 700; break;
+    case 1: scriptDown(R_NEXT); shift = true; go(S_TITLE); sNext = now + 700; break;
     case 2: if (typeNext(TR(S_TITLE_TXT, S_TITLE_TXT_EN))) { sNext = now + 120; return; } sNext = now + 1000; break;
-    case 3: go(S_DUR); sNext = now + 1800; break;
-    case 4: dur = 30; demoSlots(); go(S_LOAD); sNext = now + 1000; break;
+    case 3: scriptDown(R_NEXT); go(S_DUR); sNext = now + 1800; break;
+    case 4: scriptDown(R_D[1]); dur = 30; demoSlots(); go(S_LOAD); sNext = now + 1000; break;
     case 5: go(S_DAY); sNext = now + 2200; break;
     case 6: selDay = 0;
             while (selDay < nDays - 1 && !days[selDay].n) selDay++;
             if (!days[selDay].n) { script = false; go(S_OFF); return; }
-            page = 0; go(S_TIME); sNext = now + 2200; break;
-    case 7: selSlot = days[selDay].n > 2 ? 2 : 0; go(S_CONFIRM); sNext = now + 3200; break;
-    case 8: go(S_SEND); sNext = now + 1500; break;
+            scriptDown(dayRect(selDay)); page = 0; go(S_TIME); sNext = now + 2200; break;
+    case 7: selSlot = days[selDay].n > 2 ? 2 : 0; scriptDown(timeRect(selSlot)); go(S_CONFIRM); sNext = now + 3200; break;
+    case 8: scriptDown(R_GO); go(S_SEND); sNext = now + 1500; break;
     case 9: resultOk = true; go(S_RESULT); sNext = now + 4500; break;
-    default: script = false; go(S_OFF); return;
+    default: scriptDown(R_GO); script = false; go(S_OFF); return;
   }
   sStep++;
 }
@@ -580,7 +591,6 @@ static void scriptTick() {
 void bookingLoop() {
   if (scr == S_OFF) return;
   uint32_t now = millis();
-  if (pressR >= 0 && now - pressAt > 120) keyUp();
   if (script) { scriptTick(); return; }
   if (demoMode && scr == S_LOAD && now - since > 900) { go(S_DAY); return; }
   if (demoMode && scr == S_SEND && now - since > 1500) { resultOk = true; go(S_RESULT); return; }

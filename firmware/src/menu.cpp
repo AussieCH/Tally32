@@ -96,13 +96,21 @@ static void drawPin() {
 static const int TILE_N = 9, TILE_W = (SCR_W - ux(40) - 3 * ux(16)) / 4, TILE_H = uy(118);
 static Rect tileRect(int i) { return { ux(20) + (i % 4) * (TILE_W + ux(16)), uy(92) + (i / 4) * (TILE_H + uy(14)), TILE_W, TILE_H }; }
 
-static void tile(int i, const char* t, const char* sub) {
-  Rect r = tileRect(i);
-  button(r, nullptr, B_NORMAL);
+// Texte der Kacheln gemerkt, damit eine Kachel beim Antippen aufblitzen kann (btnCustom)
+static char tileT[TILE_N][32], tileS[TILE_N][40];
+static void drawTile(const Rect& r, Style st, int i) {
+  button(r, nullptr, st);
+  const uint32_t bg = btnBg(st), fg = btnFg(st);
   lcd.setFont(smooth(26));                       // lange Titel ("Sprache / Language") eine Stufe kleiner
-  int ts = lcd.textWidth(t) > r.w - us(16) ? 20 : 26;
-  txt(t, r.cx(), r.cy() - uy(16), ts, pInk(), pBtn());
-  if (sub && *sub) txt(sub, r.cx(), r.cy() + uy(22), 20, mixRGB(pInk(), pBtn(), 30), pBtn());
+  int ts = lcd.textWidth(tileT[i]) > r.w - us(16) ? 20 : 26;
+  txt(tileT[i], r.cx(), r.cy() - uy(16), ts, fg, bg);
+  if (tileS[i][0]) txt(tileS[i], r.cx(), r.cy() + uy(22), 20, st == B_NORMAL ? mixRGB(pInk(), pBtn(), 30) : fg, bg);
+  btnCustom(drawTile, i);
+}
+static void tile(int i, const char* t, const char* sub) {
+  strncpy(tileT[i], t, sizeof(tileT[i]) - 1); tileT[i][sizeof(tileT[i]) - 1] = '\0';
+  strncpy(tileS[i], sub ? sub : "", sizeof(tileS[i]) - 1); tileS[i][sizeof(tileS[i]) - 1] = '\0';
+  drawTile(tileRect(i), B_NORMAL, i);
 }
 
 static void drawMain() {
@@ -328,6 +336,7 @@ static void go(MScreen s) {
 static void menuClose() {
   if (displayDirty) { displayApply(true); displayDirty = false; }
   scr = M_OFF;
+  btnClear();
   uiVersion++;                                   // Statusanzeige neu zeichnen
 }
 

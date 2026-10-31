@@ -38,6 +38,7 @@
 #include "rtc.h"
 #include "state.h"
 #include "ui.h"
+#include "widgets.h"
 #include "logo_small_rgba.h"
 #include "icons_conn.h"
 #include "walker_icon.h"
@@ -370,10 +371,17 @@ static void drawStatusPane(uint32_t barRGB) {
   else drawConnIcon(linked, SCR_W - ux(24), BAR_Y0);
 }
 
-// Knopf unten links: dunkelgrau mit weisser Schrift
-static void drawButton(const char* s) {
-  lcd.fillRoundRect(BK_X, BK_Y, BK_W, BK_H, us(8), c565(C_ICON));
-  sTxt(s, BK_X + BK_W / 2, BK_Y + BK_H / 2, 26, c565(0xFFFFFF), c565(C_ICON), middle_center);
+// Knopf "Termin buchen" unten links: dunkelgrau mit weisser Schrift, beim Antippen heller
+static void drawBookButton(const Rect& r, Style st, int) {
+  const uint32_t bg = st == B_PRESSED ? 0x8C8C8C : C_ICON;
+  lcd.fillRoundRect(r.x, r.y, r.w, r.h, us(8), c565(bg));
+  sTxt(TR("Termin buchen", "Book a meeting"), r.cx(), r.cy(), 26, c565(0xFFFFFF), c565(bg), middle_center);
+}
+static void drawButton() {
+  const Rect r = { BK_X, BK_Y, BK_W, BK_H };
+  drawBookButton(r, B_NORMAL, 0);
+  btnRegister(r, nullptr, B_NORMAL, 26);
+  btnCustom(drawBookButton);
 }
 
 enum Icon { IC_MIC, IC_CAL, IC_AWAY, IC_WALK, IC_CHECK, IC_KEY, IC_OFF };
@@ -536,6 +544,7 @@ static void drawOofText(const char* text) {
 // Office-365-Anmeldung: links Schluessel, rechts Adresse und Code
 static void drawLogin() {
   const uint16_t bg = c565(C_BG), fg = c565(C_TEXT), dim = c565(C_DIM);
+  btnClear();
   drawHeader();
   onAirY = -1;
   drawStatusPane(0x505058);
@@ -578,6 +587,7 @@ static const char* dayWord(const char* marker) {
 // senkrecht mittig in der eigenen Flaeche
 static void drawFull() {
   const uint16_t bg = c565(C_BG), fg = c565(C_TEXT), dim = c565(C_DIM);
+  btnClear();
   drawHeader();
   onAirY = -1;
   drawStatusPane(statusBgRGB(cur.mode));
@@ -645,7 +655,7 @@ static void drawFull() {
   const char* oof = demoMode ? demoOofText() : oofText;
   if (cur.mode == M_CLOSED && cur.oof && oof[0]) drawOofText(oof);
   else drawTimeCentered(label, hhmm, note, BAN_H, SCR_H, cur.mode == M_CALL ? "ON AIR" : "");
-  if (bookingShown()) drawButton(TR("Termin buchen", "Book a meeting"));   // ohne Notebook keine Buchung moeglich
+  if (bookingShown()) drawButton();   // ohne Notebook keine Buchung moeglich
   shown = cur;
 }
 
@@ -667,6 +677,16 @@ static void render() {
 }
 
 // ----------------------------------------------------------------- Seriell
+// Antippen verteilen: der getippte Knopf blitzt kurz auf (widgets.h), dann folgt die Aktion
+static void dispatchTap(int x, int y) {
+  const uint32_t gen = btnGen;
+  const int b = btnPress(x, y);
+  if (menuActive()) menuTap(x, y);
+  else if (bookingActive()) bookingTap(x, y);
+  else if (bookingShown() && x >= BK_X && x < BK_X + BK_W && y >= BK_Y && y < BK_Y + BK_H) bookingOpen();
+  btnRelease(b, gen);
+}
+
 static void field(char* dst, size_t n, const char* tok) {
   if (!tok || strcmp(tok, "-") == 0) { dst[0] = '\0'; return; }
   strncpy(dst, tok, n - 1); dst[n - 1] = '\0';
@@ -682,11 +702,7 @@ static void handleLine(char* line) {
   if (strncmp(line, "TAP ", 4) == 0) {           // Diagnose: Antippen nachstellen (Bildschirmfotos)
     int x = 0, y = 0;                            // TAP menu = Menue oeffnen (wie 3 s auf das Logo)
     if (!strcmp(line + 4, "menu")) menuOpen();
-    else if (sscanf(line + 4, "%d %d", &x, &y) == 2) {
-      if (menuActive()) menuTap(x, y);
-      else if (bookingActive()) bookingTap(x, y);
-      else if (bookingShown() && x >= BK_X && x < BK_X + BK_W && y >= BK_Y && y < BK_Y + BK_H) bookingOpen();
-    }
+    else if (sscanf(line + 4, "%d %d", &x, &y) == 2) dispatchTap(x, y);
     Serial.println("OK");
     return;
   }
@@ -883,9 +899,8 @@ static void touchLoop() {
     onBadge = !bookingActive() && !menuActive() &&
               x >= BADGE_X - BADGE_HIT && x < BADGE_X + BADGE_W + BADGE_HIT &&
               y >= BADGE_Y - BADGE_HIT && y < BADGE_Y + BADGE_H + BADGE_HIT;
-    if (menuActive()) { menuTap(x, y); waitRelease = true; }   // im Menue keine Haltegesten
-    else if (bookingActive()) bookingTap(x, y);
-    else if (bookingShown() && x >= BK_X && x < BK_X + BK_W && y >= BK_Y && y < BK_Y + BK_H) bookingOpen();
+    if (menuActive()) waitRelease = true;        // im Menue keine Haltegesten
+    dispatchTap(x, y);
   }
   prev = held;
   if (!held) { since = 0; waitRelease = false; return; }
