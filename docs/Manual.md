@@ -118,6 +118,21 @@ Outside working hours ("After hours" or "Day off") with the time from which you 
 hours are the time window and the weekdays from the meeting booking settings. If the computer is
 locked or not connected, the screen saver starts after 2 minutes without a touch.
 
+#### With automatic replies
+
+<img src="screens/en/status-abwesenheitsnotiz.png" width="480" alt="OUT OF OFFICE with automatic reply">
+
+When automatic replies (out of office) are turned on in Outlook, the display shows OUT OF OFFICE
+with "Away" and the text of the reply on the right, also during working hours. It shows the reply
+for people **inside** the organisation, or the one for external senders if that is empty. A long
+text is shortened. Without a text the right side shows "back on" with the end of the reply period,
+if one is set. Automatic replies take priority over calendar and Teams, only an ongoing call still
+shows ON AIR.
+
+**Note:** The text is clearly visible outside your door. Do not write anything visitors should not
+read, or turn the display of it off with `"oof": false` (see
+[section 5.5](#55-further-agent-settings)).
+
 ### NO SIGNAL
 
 Crossed out circle: the display receives no data from the computer and has no valid stored
@@ -234,10 +249,12 @@ Important:
 - For meeting booking, first set `"booking": true` in `~/.config/tally32/config.json` (Windows:
   `%USERPROFILE%\.config\tally32\config.json`) and then sign in.
 - Depending on the company, IT has to approve the permissions once: `Calendars.ReadBasic`,
-  `Presence.Read` and for booking `Calendars.ReadWrite`. Approval without PowerShell: sign in once
+  `Presence.Read`, `MailboxSettings.Read` (automatic replies) and for booking `Calendars.ReadWrite`. Approval without PowerShell: sign in once
   with the admin account, tick "Consent on behalf of your organization", wait until the agent
   rejects the admin account and then sign in with your own account.
 - The sign-in token is stored encrypted in the Keychain (Mac) or with DPAPI (Windows).
+- Older sign-ins do not include the permission for automatic replies: sign in once more for it.
+  Until then everything else works as before.
 
 ### 5.5 Further agent settings
 
@@ -248,6 +265,7 @@ In `config.json`:
 | `"booking": true` | allow meeting booking on the display |
 | `"presence": false` | do not query the Teams presence, calendar only |
 | `"teams_away": false` | do not show Teams "Away" as AWAY |
+| `"oof": false` | do not query or show automatic replies |
 | `"busy_show_as": ["busy", "tentative"]` | also count "Tentative" meetings as busy |
 | `"merge_gap_min": 5` | gaps of up to this many minutes count as continuously busy |
 | `"mic_ignore": [...]` | programs that should never trigger ON AIR |
@@ -405,6 +423,8 @@ displays show the same account. With `"port": "auto"` two agents would grab the 
 
 - From the calendar the agent only reads the start, end and type of a meeting ("Busy",
   "Out of office" …), **never the subject, attendees or content**. The display only shows times.
+- From the mailbox settings the agent only reads the automatic replies: whether they are on, their
+  period and their text. The text appears on the display. With `"oof": false` this is skipped.
 - From the microphone the agent only detects **whether** it is in use and by which program.
   Nothing is recorded.
 - The built-in camera of the display is not used.
@@ -422,6 +442,7 @@ displays show the same account. With `"port": "auto"` two agents would grab the 
 | NO SIGNAL after a power cut | CR1220 coin cell missing or empty, Menu > Info > Real-time clock |
 | No date in the header | The display has not received the time from the agent yet (10 inch: after every restart without a coin cell) |
 | Teams presence missing | needs a work or school account with the `Presence.Read` approval |
+| Automatic reply does not appear | sign in once more (permission `MailboxSettings.Read`), the agent log reports the missing permission. Changes appear within 2 minutes |
 | PIN or password forgotten | press the display for **10 seconds**: passwords and PIN are back to the factory values |
 | 10 inch: touch does not respond | cut the power completely, so unplug USB **and** the battery, then plug in again |
 | Desk phone does not trigger ON AIR | a desk phone does not use the computer's microphone, Tally32 cannot detect it |

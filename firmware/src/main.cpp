@@ -71,6 +71,8 @@ static bool timeValid = false;
 static int32_t tzOffset = 0;                    // Sekunden zu UTC
 static time_t calSyncUtc = 0;                   // UTC beim letzten CB
 static char lastStand[8] = "";                  // Uhrzeit der letzten Daten
+// Text der Abwesenheitsnotiz (Outlook) vom Agenten, Tab = Zeilenumbruch, "" = keiner
+static char oofText[481] = "";
 static const time_t CACHE_MAX_S = 16 * 3600;
 int rtcState = RTC_NONE;
 static uint32_t rtcWrittenMs = 0;
@@ -438,6 +440,90 @@ static void onAirLoop() {
   drawOnAirHead(ONAIR_MIN_PCT + step * (100 - ONAIR_MIN_PCT) / 20);
 }
 
+// Text in Zeilen der Breite w (aktuelle Schrift), Tab = Zeilenumbruch. Ueberlange Woerter
+// (z. B. Links) werden an einer UTF-8-Zeichengrenze getrennt. -> Anzahl Zeilen (auch > maxLines)
+static int wrapText(const char* s, int w, String* out, int maxLines) {
+  int n = 0;
+  String line;
+  auto push = [&](const String& l) { if (n < maxLines) out[n] = l; n++; };
+  const char* p = s;
+  while (true) {
+    const char* e = p;
+    while (*e && *e != ' ' && *e != '\t') e++;
+    String word;
+    for (const char* q = p; q < e; q++) word += *q;
+    if (word.length()) {
+      String cand = line.length() ? line + " " + word : word;
+      if (lcd.textWidth(cand.c_str()) <= w) line = cand;
+      else {
+        if (line.length()) push(line);
+        line = word;
+        while (lcd.textWidth(line.c_str()) > w) {
+          int k = line.length() - 1;
+          while (k > 1 && ((line[k] & 0xC0) == 0x80 || lcd.textWidth(line.substring(0, k).c_str()) > w)) k--;
+          push(line.substring(0, k));
+          line = line.substring(k);
+        }
+      }
+    }
+    if (!*e || *e == '\t') { push(line); line = ""; }
+    if (!*e) return n;
+    p = e + 1;
+  }
+}
+
+// Abwesenheitsnotiz rechts: Ueberschrift und Text linksbuendig, als Block senkrecht mittig
+// unter dem Verbindungssymbol. Leerzeilen (Absaetze) halb so hoch. Passt der Text in 26 px
+// nicht, dann in 20 px (nur 7", das 10" hat eine Textgroesse), sonst gekuerzt mit "...".
+static void drawOofText() {
+  const uint16_t bg = c565(C_BG), fg = c565(C_TEXT), dim = c565(C_DIM);
+  const int x0 = PX0 + ux(40), w = SCR_W - ux(40) - x0;
+  const int top = BAR_Y0 + ICON_CONN_H + uy(16), bottom = BAR_Y1;
+  constexpr int MAXL = 24;
+  static String lines[MAXL];
+  lcd.setFont(smooth(20));
+  const int hh = lcd.fontHeight() + uy(18);
+  const int room = bottom - top - hh;
+  int size = 26, n = 0, lh = 1, fit = 0, used = 0;
+  for (int sz : { 26, 20 }) {
+    size = sz;
+    lcd.setFont(smooth(sz));
+    lh = lcd.fontHeight() + uy(6);
+    n = wrapText(oofText, w, lines, MAXL);
+    if (n > MAXL) n = MAXL;
+    fit = used = 0;                              // so viele Zeilen passen
+    while (fit < n) {
+      const int h = lines[fit].length() ? lh : lh / 2;
+      if (used + h > room) break;
+      used += h; fit++;
+    }
+    if (fit == n) break;
+  }
+  const bool cut = fit < n;
+  n = fit;
+  while (n > 0 && !lines[n - 1].length()) { n--; used -= lh / 2; }   // keine Leerzeile am Schluss
+  int y = top + (room - used) / 2;
+  sTxt(TR("Abwesenheitsnotiz", "Automatic reply"), x0, y, 20, dim, bg, top_left);
+  y += hh;
+  lcd.setFont(smooth(size));
+  lcd.setTextColor(fg, bg);
+  lcd.setTextDatum(top_left);
+  for (int i = 0; i < n; i++) {
+    String s = lines[i];
+    if (!s.length()) { y += lh / 2; continue; }
+    if (cut && i == n - 1) {                     // gekuerzt: Auslassungszeichen am Schluss
+      while (s.length() && lcd.textWidth((s + " \xE2\x80\xA6").c_str()) > w) {
+        int k = s.length() - 1;
+        while (k > 0 && (s[k] & 0xC0) == 0x80) k--;
+        s = s.substring(0, k);
+      }
+      s += " \xE2\x80\xA6";
+    }
+    lcd.drawString(s.c_str(), x0, y);
+    y += lh;
+  }
+}
+
 // Office-365-Anmeldung: links Schluessel, rechts Adresse und Code
 static void drawLogin() {
   const uint16_t bg = c565(C_BG), fg = c565(C_TEXT), dim = c565(C_DIM);
@@ -515,6 +601,13 @@ static void drawFull() {
       break;
     case M_CLOSED:
       icon = IC_AWAY; ttl = TR("AUSSER HAUS", "OUT OF OFFICE");
+      if (cur.oof) {                             // Abwesenheitsnotiz: rechts ihr Text, sonst das Ende
+        if (cur.freeAt[0]) {
+          label = strchr(cur.freeAt, ':') ? TR("zur\xC3\xBC" "ck ab", "back at") : TR("zur\xC3\xBC" "ck am", "back on");
+          hhmm = cur.freeAt;
+        }
+        break;
+      }
       if (cur.freeAt[0]) {
         // nextAt ist ein interner Merker ("heute", "morgen", "Mo".."So"), erst hier uebersetzt
         if (!strcmp(cur.nextAt, "heute")) strcpy(lbuf, TR("zur\xC3\xBC" "ck ab", "back at"));
@@ -540,7 +633,8 @@ static void drawFull() {
   drawLeft(icon, ttl, sub, sub2);
 
   // Rechts: bei ON AIR pulsierend der Zustand, darunter Beschriftung und Uhrzeit, mittig
-  drawTimeCentered(label, hhmm, note, BAN_H, SCR_H, cur.mode == M_CALL ? "ON AIR" : "");
+  if (cur.mode == M_CLOSED && cur.oof && oofText[0]) drawOofText();
+  else drawTimeCentered(label, hhmm, note, BAN_H, SCR_H, cur.mode == M_CALL ? "ON AIR" : "");
   if (bookingShown()) drawButton(TR("Termin buchen", "Book a meeting"));   // ohne Notebook keine Buchung moeglich
   shown = cur;
 }
@@ -548,7 +642,7 @@ static void drawFull() {
 static void render() {
   if (bookingActive() || saverActive() || menuActive()) return;  // zeichnen selbst
   bool full = cur.mode != shown.mode || strcmp(cur.freeAt, shown.freeAt) || strcmp(cur.nextAt, shown.nextAt) ||
-              strcmp(cur.src, shown.src) || cur.base != shown.base || uiVersion != shownVersion || linked != shownLinked;
+              strcmp(cur.src, shown.src) || cur.base != shown.base || cur.oof != shown.oof || uiVersion != shownVersion || linked != shownLinked;
   if (full) {
     shownVersion = uiVersion;
     shownLinked = linked;
@@ -587,11 +681,11 @@ static void handleLine(char* line) {
     return;
   }
   if (strcmp(line, "STATUS") == 0) {             // Diagnose: angezeigter Zustand
-    Serial.printf("STATUS mode=%d offline=%d clock=%s frei_ab=%s frei_bis=%s quelle=%s linked=%d booking_btn=%d booking=%d demo=%d locked=%d saver=%d afterhours=%d menu=%d tapage=%lu hoursage=%lu bookfrom=%u ap=%d rtc=%d reset=%s\n",
+    Serial.printf("STATUS mode=%d offline=%d clock=%s frei_ab=%s frei_bis=%s quelle=%s linked=%d booking_btn=%d booking=%d demo=%d locked=%d saver=%d afterhours=%d menu=%d tapage=%lu hoursage=%lu bookfrom=%u ap=%d rtc=%d reset=%s oof=%d\n",
                   (int)cur.mode, (int)cur.offline, cur.clock, cur.freeAt, cur.nextAt, cur.src,
                   (int)linked, (int)bookingShown(), (int)bookingActive(), (int)demoMode,
                   (int)screenLocked, (int)saverActive(), (int)afterHours, (int)menuActive(),
-                  (unsigned long)((millis() - lastTapMs) / 1000), (unsigned long)((millis() - afterHoursSince) / 1000), (unsigned)bookFrom, webApState(), rtcState, resetReasonText());
+                  (unsigned long)((millis() - lastTapMs) / 1000), (unsigned long)((millis() - afterHoursSince) / 1000), (unsigned)bookFrom, webApState(), rtcState, resetReasonText(), (int)cur.oof);
     return;
   }
   if (strcmp(line, "SHOT") == 0) {               // Diagnose: Bildschirm als RGB565 (zeilenweise) ueber USB
@@ -639,6 +733,14 @@ static void handleLine(char* line) {
     bool lk = line[3] == '1';
     if (lk && !screenLocked) lockedSince = millis();
     screenLocked = lk;
+    return;
+  }
+  if (strncmp(line, "OOF ", 4) == 0) {           // Text der Abwesenheitsnotiz, "-" = keiner
+    const char* t = strcmp(line + 4, "-") ? line + 4 : "";
+    if (strcmp(t, oofText)) {
+      strncpy(oofText, t, sizeof(oofText) - 1); oofText[sizeof(oofText) - 1] = '\0';
+      if (cur.oof) uiVersion++;
+    }
     return;
   }
   if (strncmp(line, "TM ", 3) == 0) {            // Uhrzeit fuer den Offline-Betrieb
@@ -707,7 +809,9 @@ static void handleLine(char* line) {
   if      (!strcmp(mode, "call")) cur.mode = M_CALL;
   else if (!strcmp(mode, "busy")) cur.mode = M_BUSY;
   else if (!strcmp(mode, "away")) cur.mode = M_AWAY;
+  else if (!strcmp(mode, "oof"))  cur.mode = M_CLOSED;    // Abwesenheitsnotiz: AUSSER HAUS
   else                            cur.mode = M_FREE;
+  cur.oof = !strcmp(mode, "oof");
   field(cur.clock, sizeof(cur.clock), clk);
   field(cur.freeAt, sizeof(cur.freeAt), fa);
   field(cur.nextAt, sizeof(cur.nextAt), na);
@@ -723,7 +827,7 @@ static void handleLine(char* line) {
 }
 
 static void pollSerial() {
-  static char buf[512];
+  static char buf[640];                   // OOF-Zeile: bis 480 Byte Text
   static int len = 0;
   while (Serial.available()) {
     char c = (char)Serial.read();

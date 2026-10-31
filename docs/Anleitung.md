@@ -118,6 +118,21 @@ sind. Die Arbeitszeit sind das Zeitfenster und die Wochentage aus den Einstellun
 Ist der Computer gesperrt oder nicht verbunden, startet nach 2 Minuten ohne Berührung der
 Bildschirmschoner.
 
+#### Mit Abwesenheitsnotiz
+
+<img src="screens/status-abwesenheitsnotiz.png" width="480" alt="AUSSER HAUS mit Abwesenheitsnotiz">
+
+Ist in Outlook die Abwesenheitsnotiz (automatische Antworten) eingeschaltet, zeigt das Display
+AUSSER HAUS mit "Abwesend" und rechts den Text der Notiz, auch während der Arbeitszeit. Gezeigt
+wird die Antwort an Personen **innerhalb** der Organisation, ist sie leer, die an externe Absender.
+Ein langer Text wird gekürzt. Ohne Text steht rechts "zurück am" mit dem Ende der Notiz, sofern ein
+Zeitraum gesetzt ist. Die Notiz geht Kalender und Teams vor, nur ein laufendes Gespräch zeigt
+weiterhin ON AIR.
+
+**Achtung:** Der Text steht gut sichtbar vor der Tür. Nichts hineinschreiben, was Besucher nicht
+lesen sollen, oder die Anzeige mit `"oof": false` ausschalten (siehe
+[Abschnitt 5.5](#55-weitere-einstellungen-des-agenten)).
+
 ### KEIN SIGNAL
 
 Durchgestrichener Kreis: Das Display bekommt keine Daten vom Computer und hat auch keine gültigen
@@ -232,11 +247,13 @@ Wichtig:
 - Das Konto braucht ein Exchange-Postfach. Konten ohne Postfach lehnt der Agent ab.
 - Für die Terminbuchung vorher in `~/.config/tally32/config.json` (Windows:
   `%USERPROFILE%\.config\tally32\config.json`) `"booking": true` setzen und dann anmelden.
-- Je nach Firma muss die IT die Rechte einmal freigeben: `Calendars.ReadBasic`, `Presence.Read` und für
-  die Buchung `Calendars.ReadWrite`. Ohne Freigabe ohne PowerShell: einmal mit dem Admin-Konto anmelden,
+- Je nach Firma muss die IT die Rechte einmal freigeben: `Calendars.ReadBasic`, `Presence.Read`,
+  `MailboxSettings.Read` (Abwesenheitsnotiz) und für die Buchung `Calendars.ReadWrite`. Ohne Freigabe ohne PowerShell: einmal mit dem Admin-Konto anmelden,
   "Consent on behalf of your organization" anhaken, die Ablehnung des Admin-Kontos abwarten und dann mit
   dem eigenen Konto anmelden.
 - Der Anmeldeschlüssel liegt verschlüsselt im Schlüsselbund (Mac) bzw. per DPAPI (Windows).
+- Ältere Anmeldungen enthalten das Recht für die Abwesenheitsnotiz nicht: dafür einmal neu anmelden.
+  Bis dahin läuft alles andere wie bisher.
 
 ### 5.5 Weitere Einstellungen des Agenten
 
@@ -247,6 +264,7 @@ In `config.json`:
 | `"booking": true` | Terminbuchung am Display erlauben |
 | `"presence": false` | Teams-Status nicht abfragen, nur Kalender |
 | `"teams_away": false` | Teams "Abwesend" nicht als ABWESEND anzeigen |
+| `"oof": false` | Abwesenheitsnotiz nicht abfragen und nicht anzeigen |
 | `"busy_show_as": ["busy", "tentative"]` | auch Termine "Mit Vorbehalt" als besetzt zählen |
 | `"merge_gap_min": 5` | Lücken bis zu so vielen Minuten gelten als durchgehend besetzt |
 | `"mic_ignore": [...]` | Programme, die nie ON AIR auslösen sollen |
@@ -406,6 +424,8 @@ Displays zeigen dasselbe Konto. Mit `"port": "auto"` würden sich zwei Agenten d
 
 - Der Agent liest aus dem Kalender nur Beginn, Ende und Art eines Termins ("Beschäftigt",
   "Abwesend" …), **nie Betreff, Teilnehmer oder Inhalt**. Das Display zeigt nur Zeiten.
+- Aus den Postfacheinstellungen liest der Agent nur die Abwesenheitsnotiz: ob sie eingeschaltet ist,
+  ihren Zeitraum und ihren Text. Der Text erscheint am Display. Mit `"oof": false` unterbleibt das.
 - Vom Mikrofon erkennt der Agent nur, **ob** es belegt ist und von welchem Programm. Es wird nichts
   aufgenommen.
 - Die eingebaute Kamera des Displays wird nicht verwendet.
@@ -422,6 +442,7 @@ Displays zeigen dasselbe Konto. Mit `"port": "auto"` würden sich zwei Agenten d
 | Nach einem Stromunterbruch KEIN SIGNAL | Knopfzelle CR1220 fehlt oder ist leer, Menü > Info > Echtzeituhr |
 | Kein Datum in der Kopfzeile | Das Display hat noch keine Uhrzeit vom Agenten (10 Zoll: ohne Knopfzelle nach jedem Neustart) |
 | Teams-Status fehlt | Konto braucht ein Arbeits- oder Schulkonto mit Freigabe `Presence.Read` |
+| Abwesenheitsnotiz erscheint nicht | einmal neu anmelden (Recht `MailboxSettings.Read`), das Protokoll des Agenten meldet das fehlende Recht. Änderungen erscheinen nach höchstens 2 Minuten |
 | PIN oder Passwort vergessen | **10 Sekunden** auf das Display drücken: Passwörter und PIN gelten wieder ab Werk |
 | 10 Zoll: Touch reagiert nicht | Strom ganz unterbrechen, also USB **und** Akku abziehen, dann wieder anstecken |
 | Telefon am Tisch löst kein ON AIR aus | ein Tischtelefon belegt kein Mikrofon am Computer, das erkennt Tally32 nicht |

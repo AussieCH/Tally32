@@ -20,6 +20,7 @@ Spec Sheet für die IT: [Deutsch](docs/Tally32_Agent_SpecSheet_ICT.pdf), [Englis
 | FREI | Häkchen, "frei bis 15:00" (nächster Termin), darunter "danach wieder frei ab 16:00" | sonst |
 | NICHT AM PLATZ | Ampelmännchen, "nächster Termin 13:00", "Stand 09:29" | Notebook weg, laut Kalender gerade kein Termin |
 | AUSSER HAUS | Koffer, "Feierabend" oder "Arbeitsfreier Tag", "zurück morgen ab 07:00" | ausserhalb der Arbeitszeit (frühester Beginn, spätestes Ende und Wochentage aus den Buchungseinstellungen), ersetzt FREI und NICHT AM PLATZ. Nach 2 Minuten ohne Berührung Bildschirmschoner |
+| AUSSER HAUS (Abwesenheitsnotiz) | Koffer, "Abwesend", rechts der Text der Notiz | Abwesenheitsnotiz in Outlook eingeschaltet, geht Kalender und Teams vor |
 | KEIN SIGNAL | durchgestrichener Kreis | keine Daten vom Agent und kein gültiger Offline-Puffer |
 
 ### So sieht es aus
@@ -252,7 +253,7 @@ Im Menü am Display unter "Microsoft 365", im Webinterface "Neue Anmeldung
 starten" oder `tally_agent.py login`: das bisherige Konto wird ersetzt. Vorher
 `"booking": true` in `config.json` setzen, sonst fehlt das Recht zum Buchen.
 Im neuen Tenant braucht es je nach Einstellung eine Admin-Freigabe für die
-Rechte `Calendars.ReadBasic`, `Presence.Read` und `Calendars.ReadWrite` (Client
+Rechte `Calendars.ReadBasic`, `Presence.Read`, `MailboxSettings.Read` und `Calendars.ReadWrite` (Client
 "Microsoft Graph Command Line Tools" oder eine eigene App-Registrierung, siehe
 unten). Ohne Freigabe laufen nur Mikrofon und Bildschirmsperre.
 
@@ -266,12 +267,13 @@ Exchange-Postfach nimmt der Agent grundsätzlich nicht an.
 
 Standardmässig wird der öffentliche Client "Microsoft Graph Command Line Tools"
 mit Device Code Login verwendet (Rechte `Calendars.ReadBasic`, `Presence.Read`,
-mit Buchung `Calendars.ReadWrite`, Tenant `common`). Je nach Tenant muss ein Admin die Rechte einmal freigeben,
+`MailboxSettings.Read` für die Abwesenheitsnotiz, mit Buchung `Calendars.ReadWrite`, Tenant `common`). Je nach Tenant muss ein Admin die Rechte einmal freigeben,
 danach können sich normale Benutzer anmelden. Das angemeldete Konto braucht ein
 Exchange Postfach, sonst gibt es nur den Teams Status. Blockiert der Tenant den
 Client ganz, eine eigene App Registrierung anlegen (Public Client, "Allow public
 client flows" an, delegierte Rechte wie oben) und deren ID als `client_id`
-eintragen. Mit `"presence": false` wird nur der Kalender abgefragt.
+eintragen. Mit `"presence": false` wird nur der Kalender abgefragt, mit `"oof": false`
+keine Abwesenheitsnotiz.
 
 ### Grenzen
 
@@ -286,8 +288,12 @@ eintragen. Mit `"presence": false` wird nur der Kalender abgefragt.
 
 ```
 HELLO                                       -> TALLY32 1
-ST <call|busy|away|free> <HH:MM> <frei_ab> <frei_bis> <quelle> [<free|busy|away>]
+ST <call|busy|away|free|oof> <HH:MM> <frei_ab> <frei_bis> <quelle> [<free|busy|away>]
+OOF <text|->                                Text der Abwesenheitsnotiz, Tab = Zeilenumbruch
 ```
+
+`oof`: Abwesenheitsnotiz aktiv, `frei_ab` ist ihr Ende (falls geplant). Die OOF-Zeile
+kommt nach jeder Verbindung und bei jeder Änderung, höchstens 480 Byte.
 
 Das letzte Feld kommt nur bei `call`: der Zustand ohne Gespräch. `frei_ab` und
 `frei_bis` gehören dann zu diesem Zustand, das Display zeigt ihn mit pulsierendem
@@ -357,6 +363,7 @@ Spec sheet for IT: [English](docs/Tally32_Agent_SpecSheet_IT_EN.pdf), [German](d
 | FREE | check mark, "free until 15:00" (next meeting), below it "free again from 16:00" | otherwise |
 | NOT AT DESK | walking traffic light man, "next appointment 13:00", "as of 09:29" | notebook gone, no meeting in the calendar right now |
 | OUT OF OFFICE | suitcase, "After hours" or "Day off", "back tomorrow at 07:00" | outside working hours (earliest start, latest end and weekdays from the booking settings), replaces FREE and NOT AT DESK. Screen saver after 2 minutes without a touch |
+| OUT OF OFFICE (automatic reply) | suitcase, "Away", the text of the reply on the right | automatic replies turned on in Outlook, take priority over calendar and Teams |
 | NO SIGNAL | crossed out circle | no data from the agent and no valid offline buffer |
 
 ### What it looks like
@@ -579,8 +586,8 @@ If Python is not allowed on the PC: package the agent with PyInstaller into a si
 In the display menu under "Microsoft 365", in the web interface "Start new sign-in" or with
 `tally_agent.py login`: the previous account is replaced. Set `"booking": true` in `config.json`
 first, otherwise the permission to book is missing. Depending on its settings the new tenant needs
-an admin approval for the permissions `Calendars.ReadBasic`, `Presence.Read` and
-`Calendars.ReadWrite` (client "Microsoft Graph Command Line Tools" or your own app registration,
+an admin approval for the permissions `Calendars.ReadBasic`, `Presence.Read`,
+`MailboxSettings.Read` and `Calendars.ReadWrite` (client "Microsoft Graph Command Line Tools" or your own app registration,
 see below). Without approval only microphone and screen lock work.
 
 Approval without PowerShell: sign in once with the admin account and tick "Consent on behalf of
@@ -591,12 +598,14 @@ accepts accounts without an Exchange mailbox.
 #### Microsoft 365
 
 By default the public client "Microsoft Graph Command Line Tools" is used with device code login
-(permissions `Calendars.ReadBasic`, `Presence.Read`, with booking `Calendars.ReadWrite`, tenant
+(permissions `Calendars.ReadBasic`, `Presence.Read`, `MailboxSettings.Read` for automatic replies,
+with booking `Calendars.ReadWrite`, tenant
 `common`). Depending on the tenant an admin has to approve the permissions once, after that normal
 users can sign in. The signed-in account needs an Exchange mailbox, otherwise only the Teams
 presence is available. If the tenant blocks the client entirely, create your own app registration
 (public client, "Allow public client flows" on, delegated permissions as above) and enter its ID as
-`client_id`. With `"presence": false` only the calendar is queried.
+`client_id`. With `"presence": false` only the calendar is queried, with `"oof": false` no
+automatic replies.
 
 #### Limitations
 
@@ -611,8 +620,12 @@ presence is available. If the tenant blocks the client entirely, create your own
 
 ```
 HELLO                                       -> TALLY32 1
-ST <call|busy|away|free> <HH:MM> <free_from> <free_until> <source> [<free|busy|away>]
+ST <call|busy|away|free|oof> <HH:MM> <free_from> <free_until> <source> [<free|busy|away>]
+OOF <text|->                                text of the automatic reply, tab = line break
 ```
+
+`oof`: automatic replies are on, `free_from` is their end (if scheduled). The OOF line is sent
+after every connection and on every change, at most 480 bytes.
 
 The last field is only sent with `call`: the state without the call. `free_from` and `free_until`
 then belong to this state, and the display shows it with a pulsing ON AIR above it.

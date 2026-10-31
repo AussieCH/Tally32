@@ -22,7 +22,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import (Image, KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer,
+from reportlab.platypus import (CondPageBreak, Image, KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer,
                                 Table, TableStyle)
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
@@ -224,6 +224,9 @@ def build():
            "isCancelled,isAllDay). Kein Betreff, kein Ort, keine Teilnehmer, kein Inhalt.",
            "only <b>start, end, free/busy status, cancelled</b> (field selection $select=showAs,start,end,"
            "isCancelled,isAllDay). No subject, no location, no attendees, no body."), "60 s"],
+        [L("Abwesenheit", "Auto replies"), "Microsoft Graph GET /me/mailboxSettings",
+         L("Abwesenheitsnotiz: an/aus, Zeitraum, Text (wird angezeigt, abschaltbar)",
+           "automatic replies: on/off, period, text (shown, can be disabled)"), "120 s"],
         [L("Terminbuchung (Kernfunktion)", "Appointment booking (core feature)"),
          L("Microsoft Graph GET /me/calendarView (2 Wochen) und POST /me/events",
            "Microsoft Graph GET /me/calendarView (2 weeks) and POST /me/events"),
@@ -346,6 +349,10 @@ def build():
            "only requests the time fields. No admin consent required."), L("ja", "yes")],
         ["Presence.Read", L("eigener Teams-Status", "own Teams status"),
          L("optional (abschaltbar)", "optional (can be disabled)")],
+        ["MailboxSettings.Read",
+         L("Abwesenheitsnotiz: Status, Zeitraum, Text. Kein Zugriff auf E-Mails.",
+           "Automatic replies: status, period, text. No access to emails."),
+         L("optional (abschaltbar)", "optional (can be disabled)")],
         ["Calendars.ReadWrite",
          L("Terminbuchung am Display: Termin im eigenen Kalender anlegen, mit "
            "Einladung an den Besucher. Kernfunktion, im Agenten eingeschaltet (\"booking\": true).",
@@ -381,8 +388,10 @@ def build():
           "The setup Wi-Fi can be <b>turned off</b> in the web interface or in the menu on the display. It can "
           "only be turned back on at the device itself (settings menu with PIN or pressing the display for "
           "5 seconds)."),
-        L("zeigt am Platz nur Status und Zeiten, <b>nie Betreffs</b> von Terminen.",
-          "shows only status and times at the desk, <b>never subjects</b> of appointments."),
+        L("zeigt am Platz nur Status und Zeiten, <b>nie Betreffs</b> von Terminen, "
+          "aber den Text einer aktiven Abwesenheitsnotiz.",
+          "shows only status and times at the desk, <b>never subjects</b> of appointments, "
+          "but the text of active automatic replies."),
     ]))
 
     s.append(P(L("7. Risikobeurteilung", "7. Risk assessment"), st_h2))
@@ -439,9 +448,11 @@ def build():
            "Access blocks the device code flow, a dedicated app registration is needed."), L("gering", "low")],
         [L("Datenschutz: Verfügbarkeit sichtbar am Platz", "Privacy: availability visible at the desk"),
          L("beabsichtigt", "intended"), L("gering", "low"),
-         L("nur Status und Zeiten, keine Betreffs, entspricht dem Teams-Status. Im Bildschirmschoner ist nur "
+         L("nur Status und Zeiten, keine Betreffs, entspricht dem Teams-Status. Text der "
+           "Abwesenheitsnotiz wie für jeden Absender. Im Bildschirmschoner ist nur "
            "das Logo zu sehen.",
-           "only status and times, no subjects, same as the Teams status. The screensaver shows only "
+           "only status and times, no subjects, same as the Teams status. Automatic reply text "
+           "as for any sender. The screensaver shows only "
            "the logo."), L("gering", "low")],
     ], [40 * mm, 21 * mm, 29 * mm, L(70, 67) * mm, L(14, 17) * mm]))   # en: "Residual" braucht Platz
     s.append(Spacer(1, 3 * mm))
@@ -486,7 +497,7 @@ def build():
           "the project folder and %USERPROFILE%\\.config\\tally32."),
     ]))
 
-    s.append(PageBreak())
+    s.append(CondPageBreak(215 * mm))              # Abschnitt 10 und 11 zusammen auf eine Seite
     s.append(P(L("10. Warum einmal eine Admin-Freigabe nötig ist", "10. Why admin consent is needed once"),
                st_h2))
     s.append(P(L("Auf dem Rechner braucht der Agent <b>keine Adminrechte</b>. Einmalig nötig ist aber eine "
@@ -500,10 +511,10 @@ def build():
         [L("Was", "What"),
          L("Administratorzustimmung für die App «Microsoft Graph Command Line Tools» "
            "(oder eine eigene App-Registrierung) mit den delegierten Rechten Calendars.ReadBasic, "
-           "Calendars.ReadWrite und Presence.Read",
+           "Calendars.ReadWrite, Presence.Read und MailboxSettings.Read",
            "Admin consent for the app \"Microsoft Graph Command Line Tools\" "
            "(or a dedicated app registration) with the delegated permissions Calendars.ReadBasic, "
-           "Calendars.ReadWrite and Presence.Read")],
+           "Calendars.ReadWrite, Presence.Read and MailboxSettings.Read")],
         [L("Warum", "Why"),
          L("Viele Tenants erlauben Benutzern nicht, Apps selbst zuzustimmen, und Schreibrechte auf den "
            "Kalender gibt meist nur ein Admin frei. Ohne Zustimmung bricht die Anmeldung mit "
@@ -547,7 +558,7 @@ def build():
                "&nbsp;&nbsp;resourceId&nbsp;&nbsp;= \"&lt;"
                + L("Objekt-ID Service Principal Microsoft Graph", "object ID of the Microsoft Graph service principal")
                + "&gt;\"<br/>"
-               "&nbsp;&nbsp;scope&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = \"Calendars.ReadBasic Calendars.ReadWrite Presence.Read\"<br/>"
+               "&nbsp;&nbsp;scope&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = \"Calendars.ReadBasic Calendars.ReadWrite Presence.Read MailboxSettings.Read\"<br/>"
                "}</font>", st_body))
 
     s.append(P(L("11. Auf einen Blick", "11. At a glance"), st_h2))
@@ -572,9 +583,9 @@ def build():
            "outbound HTTPS only to login.microsoftonline.com and graph.microsoft.com, no open port")],
         [L("Rechte Microsoft 365", "Microsoft 365 permissions"),
          L("delegiert: Calendars.ReadBasic, Calendars.ReadWrite (Terminbuchung), "
-           "Presence.Read, einmalige Admin-Zustimmung",
+           "Presence.Read, MailboxSettings.Read, einmalige Admin-Zustimmung",
            "delegated: Calendars.ReadBasic, Calendars.ReadWrite (appointment booking), "
-           "Presence.Read, one-time admin consent")],
+           "Presence.Read, MailboxSettings.Read, one-time admin consent")],
         [L("Gerät", "Device"),
          L("Display per USB (nur COM-Port und JTAG des Displays), eigenes Einrichtungs-WLAN mit WPA2, abschaltbar",
            "display via USB (only COM port and JTAG of the display), own setup Wi-Fi with WPA2, can be "

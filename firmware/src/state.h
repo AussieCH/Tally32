@@ -17,6 +17,7 @@ struct Status {
   bool offline;                 // aus dem Offline-Puffer berechnet (Notebook weg)
   char stand[8];                // Uhrzeit der letzten Daten vom Agent
   Mode base;                    // bei M_CALL: Zustand darunter (M_FREE/M_BUSY/M_AWAY), sonst 0
+  bool oof;                     // Abwesenheitsnotiz aktiv (M_CLOSED, Text in oofText)
 };
 
 extern Status cur;              // zuletzt vom Agent gemeldeter Status

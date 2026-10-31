@@ -21,12 +21,15 @@ Aufrufe:
 Konfiguration: ~/.config/tally32/config.json (wird beim ersten Start angelegt).
 """
 import datetime as dt
+import html
 import json
 import os
 import queue
+import re
 import sys
 import threading
 import time
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -62,6 +65,10 @@ DEFAULTS = {
     # und isAllDay (gibt keinen Text, keine Anhaenge und Erweiterungen frei).
     # "Calendars.Read" nur eintragen, falls der Tenant ReadBasic nicht zulaesst.
     "calendar_scope": "Calendars.ReadBasic",
+    # Abwesenheitsnotiz (automatische Antworten in Outlook): aktiv -> AUSSER HAUS
+    # "Abwesend", rechts der Text der internen Antwort. Braucht MailboxSettings.Read.
+    "oof": True,
+    "oof_interval_s": 120,
     "presence_interval_s": 10,
     "calendar_interval_s": 60,
     "send_interval_s": 2,
@@ -75,10 +82,11 @@ def scopes(cfg):
 
 
 WRITE_SCOPES = ["Calendars.ReadWrite"]           # fuer die Terminbuchung am Display
+OOF_SCOPES = ["MailboxSettings.Read"]            # fuer die Abwesenheitsnotiz
 
 
 def login_scopes(cfg):
-    return scopes(cfg) + (WRITE_SCOPES if cfg["booking"] else [])
+    return scopes(cfg) + (OOF_SCOPES if cfg["oof"] else []) + (WRITE_SCOPES if cfg["booking"] else [])
 GRAPH = "https://graph.microsoft.com/v1.0"
 
 
@@ -454,9 +462,22 @@ class Graph:
         self._save()
         return res.get("access_token") if res else None
 
-    def request(self, method, path, params=None, data=None, write=False):
-        tok = self.token(write)
+    def token_for(self, extra):
+        """Token fuer zusaetzliche Rechte (z. B. MailboxSettings.Read), None wenn die
+        Anmeldung sie nicht enthaelt. Laeuft getrennt, damit aeltere Anmeldungen ohne
+        dieses Recht fuer Kalender und Teams weiter gelten."""
+        accounts = self.app.get_accounts()
+        if not accounts:
+            return None
+        res = self.app.acquire_token_silent(extra, account=accounts[0])
+        self._save()
+        return res.get("access_token") if res else None
+
+    def request(self, method, path, params=None, data=None, write=False, extra=None):
+        tok = self.token_for(extra) if extra else self.token(write)
         if not tok:
+            if extra:
+                raise PermissionError("Recht fehlt: " + " ".join(extra) + ", neu anmelden")
             if write:
                 raise PermissionError("Schreibrecht fehlt, im Setup neu bei Office 365 anmelden")
             raise PermissionError("nicht angemeldet (tally_agent.py login)")
@@ -509,6 +530,9 @@ class Graph:
     def presence(self):
         return self.get("/me/presence")
 
+    def auto_replies(self):
+        return self.request("GET", "/me/mailboxSettings/automaticRepliesSetting", extra=OOF_SCOPES)
+
     def events_today(self):
         now = dt.datetime.now().astimezone()
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -528,6 +552,84 @@ class Graph:
 def _utc(s):
     s = s.split(".")[0]
     return dt.datetime.fromisoformat(s).replace(tzinfo=dt.timezone.utc).astimezone()
+
+
+# ============================================================== Abwesenheitsnotiz
+# Zeichen, die die Schriften des Displays enthalten (tools/make_vlw.py)
+DISPLAY_CHARS = set(map(chr, range(0x20, 0x7F))) | set("ÄÖÜäöüßéèàçâêô«»·…–")
+CHAR_MAP = {"‘": "'", "’": "'", "‚": "'", "“": '"', "”": '"', "„": '"',
+            "—": "–", "‑": "-", " ": " ", "•": "·", "´": "'", "`": "'"}
+OOF_MAX_BYTES = 480                              # Puffer im Display
+
+
+def display_safe(text):
+    """Zeichen, die das Display nicht kennt, ersetzen (Akzente weg) oder weglassen."""
+    out = []
+    for ch in text:
+        ch = CHAR_MAP.get(ch, ch)
+        if ch in DISPLAY_CHARS:
+            out.append(ch)
+        else:
+            out.extend(c for c in unicodedata.normalize("NFKD", ch) if c in DISPLAY_CHARS)
+    return "".join(out)
+
+
+def html_to_lines(text):
+    """Antworttext (meist HTML aus Outlook) als Textzeilen, Leerzeilen zusammengefasst."""
+    s = re.sub(r"(?is)<(head|style|script)\b[^>]*>.*?</\1>", "", text or "")
+    s = re.sub(r"(?i)<br\s*/?>", "\n", s)
+    s = re.sub(r"(?i)</(p|div|li|tr|h[1-6])>", "\n", s)
+    s = html.unescape(re.sub(r"<[^>]+>", "", s))
+    lines = []
+    for ln in s.splitlines():
+        ln = " ".join(display_safe(ln).split())
+        if ln or (lines and lines[-1]):
+            lines.append(ln)
+    while lines and not lines[-1]:
+        lines.pop()
+    return lines
+
+
+def oof_text(lines):
+    """Zeilen fuers Display: Tab als Zeilenumbruch, auf OOF_MAX_BYTES gekuerzt."""
+    s = "\t".join(lines)
+    if len(s.encode("utf-8")) <= OOF_MAX_BYTES:
+        return s
+    while len((s + " …").encode("utf-8")) > OOF_MAX_BYTES:
+        s = s[:-1]
+    return s.rstrip() + " …"
+
+
+def _graph_time(v):
+    """dateTimeTimeZone von Graph als lokale Zeit."""
+    if not v or not v.get("dateTime"):
+        return None
+    tz = v.get("timeZone") or "UTC"
+    if tz in ("UTC", "Etc/UTC", "tzone://Microsoft/Utc"):
+        return _utc(v["dateTime"])
+    naive = dt.datetime.fromisoformat(v["dateTime"].split(".")[0])
+    try:
+        from zoneinfo import ZoneInfo
+        return naive.replace(tzinfo=ZoneInfo(tz)).astimezone()
+    except Exception:  # noqa: BLE001 - Windows-Zonennamen: als Ortszeit nehmen
+        return naive.astimezone()
+
+
+def oof_state(setting, now):
+    """active, end (bei geplanter Notiz) und Text der internen Antwort (sonst der externen)."""
+    status = (setting or {}).get("status", "disabled")
+    end = None
+    if status == "alwaysEnabled":
+        active = True
+    elif status == "scheduled":
+        start, end = _graph_time(setting.get("scheduledStartDateTime")), _graph_time(setting.get("scheduledEndDateTime"))
+        active = bool(start and end and start <= now < end)
+    else:
+        active = False
+    lines = html_to_lines(setting.get("internalReplyMessage")) if active else []
+    if active and not lines:
+        lines = html_to_lines(setting.get("externalReplyMessage"))
+    return {"active": active, "end": end if active else None, "text": oof_text(lines)}
 
 
 def day_blocks(events, cfg, day):
@@ -628,6 +730,10 @@ class StatusSource:
         self.use_presence = cfg["presence"]
         self.warned_mailbox = False
         self.events_ok = False                     # Kalender mindestens einmal gelesen
+        self.oof = {"active": False, "end": None, "text": ""}
+        self.t_oof = 0
+        self.use_oof = cfg["oof"]
+        self.warned_oof = False
         if cfg["graph"]:
             try:
                 self.graph = Graph(cfg)
@@ -645,6 +751,14 @@ class StatusSource:
         self.t_presence = self.t_calendar = 0
         self.use_presence = self.cfg["presence"]
         self.warned_mailbox = False
+        self.oof = {"active": False, "end": None, "text": ""}
+        self.t_oof = 0
+        self.use_oof = self.cfg["oof"]
+        self.warned_oof = False
+
+    def oof_line(self):
+        """Text der Abwesenheitsnotiz fuers Display (OOF-Zeile), "-" = keiner."""
+        return "OOF " + ((self.oof["text"] if self.oof["active"] else "") or "-")
 
     def username(self):
         return self.graph.username() if self.graph else ""
@@ -673,6 +787,25 @@ class StatusSource:
                     log("Graph-Fehler Presence:", e)
             except (urllib.error.URLError, PermissionError, TimeoutError, OSError) as e:
                 log("Graph-Fehler Presence:", e)
+        if self.use_oof and now - self.t_oof >= self.cfg["oof_interval_s"]:
+            self.t_oof = now
+            try:
+                new = oof_state(self.graph.auto_replies(), dt.datetime.now().astimezone())
+                if new["active"] != self.oof["active"]:
+                    log("Abwesenheitsnotiz aktiv" if new["active"] else "Abwesenheitsnotiz aus")
+                self.oof = new
+            except PermissionError:
+                if not self.warned_oof:
+                    log("Abwesenheitsnotiz: Recht MailboxSettings.Read fehlt, einmal neu anmelden (Setup oder tally_agent.py login)")
+                self.warned_oof = True
+            except urllib.error.HTTPError as e:
+                if 400 <= e.code < 500 and e.code != 429:
+                    log(f"Abwesenheitsnotiz nicht verfuegbar (HTTP {e.code}), wird nicht mehr abgefragt.")
+                    self.use_oof = False
+                else:
+                    log("Graph-Fehler Abwesenheitsnotiz:", e)
+            except (urllib.error.URLError, TimeoutError, OSError) as e:
+                log("Graph-Fehler Abwesenheitsnotiz:", e)
         if now - self.t_calendar >= self.cfg["calendar_interval_s"]:
             self.t_calendar = now
             try:
@@ -715,6 +848,9 @@ class StatusSource:
             # frei: "frei bis" = naechster Termin, "frei ab" = danach wieder frei
             mode, src = "free", ""
             next_at, free_at = cal["next_start"], cal["next_end"]
+        if self.oof["active"]:                      # Abwesenheitsnotiz geht Kalender und Teams vor
+            mode, src = "oof", "Abwesend"
+            free_at, next_at = self.oof["end"], None
         base = ""
         if call is not None:
             base, mode, src = mode, "call", call
@@ -740,6 +876,7 @@ DISPLAY_EN = {
     "laut Kalender": "per calendar",
     "Bitte nicht st\u00f6ren": "Do not disturb",
     "Mikrofon": "Microphone",
+    "Abwesend": "Away",
     # Buchung (SL ERR / BK ERR)
     "Buchung im Agenten ausgeschaltet": "Booking is turned off in the agent",
     "Kein Microsoft-Konto angemeldet": "No Microsoft account signed in",
@@ -984,6 +1121,7 @@ def run(cfg):
     dev, last, rx = None, None, b""
     lang = "de"                                     # bis das Display LANG meldet
     locked = False
+    last_oof = None
     t_send = t_account = 0
     while True:
         if dev is None:
@@ -993,7 +1131,7 @@ def run(cfg):
                 time.sleep(10)
                 continue
             dev.timeout = 0
-            last, rx, t_account = None, b"", 0
+            last, rx, t_account, last_oof = None, b"", 0, None
             lang = login.lang = booking.lang = "de"   # neue Verbindung: wieder Standard
         try:
             # Meldungen vom Geraet zuerst: ein LANG direkt nach TALLY32 gilt so schon
@@ -1027,6 +1165,10 @@ def run(cfg):
                     log("Bildschirm gesperrt" if lk else "Bildschirm entsperrt")
                     locked = lk
                 dev.write(f"LK {1 if lk else 0}\n".encode())
+                oof = src.oof_line()
+                if oof != last_oof:                   # Text der Notiz nur bei Aenderung
+                    dev.write((oof + "\n").encode("utf-8"))
+                    last_oof = oof
             if now - t_account >= 30:
                 t_account = now
                 if src.events_ok:                     # Offline-Puffer fuers Display
