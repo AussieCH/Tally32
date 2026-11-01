@@ -60,6 +60,10 @@ keeps the display unambiguous for colour blind people as well.
 **Connection symbol at the top right:** solid line = computer connected, broken line = no
 connection. In demo mode it shows "DEMO".
 
+This is the 10" display in the printed case (demo mode, German interface):
+
+<img src="fotos/foto-besetzt.jpg" width="320" alt="Photo BUSY"> <img src="fotos/foto-on-air.jpg" width="320" alt="Photo ON AIR">
+
 ## 3. The states
 
 ### FREE
@@ -203,6 +207,11 @@ is already running, stop it first (it keeps the port open).
 The display has two USB-C sockets on the back. **The upper one** is the right one. Nothing shows
 up on the lower one. After plugging in, the logo appears briefly, then NO SIGNAL until the agent
 is running.
+
+There is a printable case for the 10" display: back cover with logo, hinge and tube clamp (files
+and description in [3D Files/10.1 Zoll Display](../3D%20Files/10.1%20Zoll%20Display)).
+
+<img src="fotos/foto-gehaeuse-seite.jpg" width="320" alt="Case from the side"> <img src="fotos/foto-gehaeuse-rueckseite.jpg" width="320" alt="Case from the back">
 
 ### 5.3 Install the agent
 

@@ -60,6 +60,10 @@ und abwesend dunkel). So bleibt die Anzeige auch für farbenblinde Menschen eind
 **Verbindungssymbol oben rechts:** geschlossene Linie = Computer verbunden, unterbrochene Linie =
 keine Verbindung. Im Demomodus steht dort "DEMO".
 
+So sieht das 10"-Display im gedruckten Gehäuse aus (Demomodus):
+
+<img src="fotos/foto-besetzt.jpg" width="320" alt="Foto BESETZT"> <img src="fotos/foto-on-air.jpg" width="320" alt="Foto ON AIR">
+
 ## 3. Die Zustände
 
 ### FREI
@@ -202,6 +206,11 @@ diesen vorher anhalten (er hält den Port offen).
 
 Das Display hat hinten zwei USB-C-Buchsen. **Die obere** ist die richtige, an der unteren meldet sich
 kein Gerät. Nach dem Einstecken erscheint kurz das Logo, danach KEIN SIGNAL, bis der Agent läuft.
+
+Für das 10"-Display gibt es ein Gehäuse zum Drucken: Rückdeckel mit Logo, Gelenk und Rohrschelle
+(Dateien und Beschreibung in [3D Files/10.1 Zoll Display](../3D%20Files/10.1%20Zoll%20Display)).
+
+<img src="fotos/foto-gehaeuse-seite.jpg" width="320" alt="Gehäuse von der Seite"> <img src="fotos/foto-gehaeuse-rueckseite.jpg" width="320" alt="Gehäuse Rückseite">
 
 ### 5.3 Agent installieren
 

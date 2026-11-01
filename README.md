@@ -37,6 +37,16 @@ Bildschirmfotos vom Gerät (10", Demomodus, Beispielkonto jasmin.muster@mail.ch,
 
 Alle Bilder liegen in [docs/screens](docs/screens).
 
+### Fotos
+
+Das 10"-Display im gedruckten Gehäuse (Demomodus, Teile in [3D Files](3D%20Files/10.1%20Zoll%20Display)):
+
+| | | |
+|---|---|---|
+| ![ON AIR](docs/fotos/foto-on-air.jpg) | ![Abwesenheitsnotiz](docs/fotos/foto-abwesenheitsnotiz.jpg) | ![Rückseite mit Logo](docs/fotos/foto-gehaeuse-rueckseite.jpg) |
+
+Weitere Fotos in [docs/fotos](docs/fotos).
+
 ### Ohne Notebook (abgedockt)
 
 Der Agent schickt alle 30 Sekunden die Uhrzeit und die Terminblöcke von heute
@@ -386,6 +396,17 @@ date 30.02.2026 in the header does not exist, it marks the pictures as demo pict
 | ![OUT OF OFFICE](docs/screens/en/status-ausser-haus.png) | ![Booking start time](docs/screens/en/buchung-5-beginn.png) |
 
 All pictures are in [docs/screens/en](docs/screens/en) (German: [docs/screens](docs/screens)).
+
+#### Photos
+
+The 10" display in the printed case (demo mode, German interface, parts in
+[3D Files](3D%20Files/10.1%20Zoll%20Display)):
+
+| | | |
+|---|---|---|
+| ![ON AIR](docs/fotos/foto-on-air.jpg) | ![Automatic reply](docs/fotos/foto-abwesenheitsnotiz.jpg) | ![Back with logo](docs/fotos/foto-gehaeuse-rueckseite.jpg) |
+
+More photos in [docs/fotos](docs/fotos).
 
 ### Without notebook (undocked)
 
